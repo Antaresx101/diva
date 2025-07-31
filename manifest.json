@@ -1,8 +1,8 @@
 {
   "name": "DIVA - Deployment Interface & Visualization App",
   "short_name": "DIVA",
-  "description": "A Warhammer 40k tabletop simulator for unit deployment / reserves visualization.",
-  "start_url": "/diva/",
+  "description": "A Warhammer 40k tabletop simulator for unit deployment and visualization",
+  "start_url": "/diva/index.html",
   "scope": "/diva/",
   "display": "standalone",
   "background_color": "#1d2521",
