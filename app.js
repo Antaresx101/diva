@@ -315,16 +315,15 @@ terrainImage.onload = function() {
       }
     });
 
-    // Mobile rotation for group (double-tap to enter/exit, tap to exit, stage tap to rotate)
+    // Mobile rotation for group (double-tap + tap)
     group.on('dbltap', e => {
       e.evt.preventDefault();
       console.log('Double-tap on group:', group);
       if (activeRotatingGroup === group) {
         // Exit rotation mode for this group
         group.opacity(1.0);
-        group.draggable(true); // Enable dragging
         activeRotatingGroup = null;
-        console.log('Mobile group rotation ended, draggable:', group.draggable());
+        console.log('Mobile group rotation ended:', group);
         group.getChildren(node => node instanceof Konva.Circle || node instanceof Konva.Ellipse || node instanceof Konva.Rect).forEach(shape => {
           snapToEdge(shape, group);
         });
@@ -332,11 +331,10 @@ terrainImage.onload = function() {
         // Exit rotation mode for previous group, if any
         if (activeRotatingGroup) {
           activeRotatingGroup.opacity(1.0);
-          activeRotatingGroup.draggable(true); // Enable dragging
           activeRotatingGroup.getChildren(node => node instanceof Konva.Circle || node instanceof Konva.Ellipse || node instanceof Konva.Rect).forEach(shape => {
             snapToEdge(shape, activeRotatingGroup);
           });
-          console.log('Mobile group rotation switched from:', activeRotatingGroup, 'draggable:', activeRotatingGroup.draggable());
+          console.log('Mobile group rotation switched from:', activeRotatingGroup);
         }
         // Enter rotation mode for this group
         activeRotatingGroup = group;
@@ -345,21 +343,6 @@ terrainImage.onload = function() {
         console.log('Mobile group rotation started:', group);
       }
       unitLayer.draw();
-    });
-
-    group.on('tap', e => {
-      if (groupDragMode && activeRotatingGroup === group) {
-        e.evt.preventDefault();
-        console.log('Single-tap on active rotating group, exiting rotation:', group);
-        group.opacity(1.0);
-        group.draggable(true); // Enable dragging
-        activeRotatingGroup = null;
-        console.log('Mobile group rotation ended, draggable:', group.draggable());
-        group.getChildren(node => node instanceof Konva.Circle || node instanceof Konva.Ellipse || node instanceof Konva.Rect).forEach(shape => {
-          snapToEdge(shape, group);
-        });
-        unitLayer.draw();
-      }
     });
 
     group.on('touchstart', e => {
@@ -393,12 +376,12 @@ terrainImage.onload = function() {
 
   // Handle single tap for rotation
   stage.on('tap', e => {
-    console.log('Stage tap detected, groupDragMode:', groupDragMode, 'activeRotatingGroup:', activeRotatingGroup, 'activeRotatingShape:', activeRotatingShape, 'target:', e.target);
-    if (groupDragMode && activeRotatingGroup && e.target !== activeRotatingGroup) {
+    console.log('Stage tap detected, groupDragMode:', groupDragMode, 'activeRotatingGroup:', activeRotatingGroup, 'activeRotatingShape:', activeRotatingShape);
+    if (groupDragMode && activeRotatingGroup) {
       activeRotatingGroup.rotation(activeRotatingGroup.rotation() + 5);
       console.log('Mobile group rotated by 5 degrees, angle:', activeRotatingGroup.rotation());
       unitLayer.draw();
-    } else if (!groupDragMode && activeRotatingShape && e.target !== activeRotatingShape) {
+    } else if (!groupDragMode && activeRotatingShape) {
       activeRotatingShape.rotation(activeRotatingShape.rotation() + 5);
       console.log('Mobile shape rotated by 5 degrees, angle:', activeRotatingShape.rotation());
       snapToEdge(activeRotatingShape, activeRotatingShape.getParent());
@@ -465,7 +448,7 @@ terrainImage.onload = function() {
       objectives: [
         { x: 22, y: 30, radius: 3 },
         { x: 12, y: 12, radius: 3 },
-        { x: 32, y: 12, radius: 3 },
+        { x: 32, y: 12, shape: 'circle', radius: 3 },
         { x: 12, y: 48, radius: 3 },
         { x: 32, y: 48, radius: 3 }
       ]
