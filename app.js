@@ -149,9 +149,9 @@ terrainImage.onload = function() {
     const cols = Math.ceil(Math.sqrt(modelCount));
     const spacing = 0.1;
     let index = 0;
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    const shapePositions = []; // Store absolute positions for centroid
 
-    // Create shapes and track bounds for group center
+    // Create shapes and track absolute positions
     for (let i = 0; i < modelCount; i++) {
       const row = Math.floor(index / cols);
       const col = index % cols;
@@ -211,12 +211,12 @@ terrainImage.onload = function() {
       }
 
       if (shape) {
-        // Update group bounds
-        const bounds = getShapeBounds(shape);
-        minX = Math.min(minX, bounds.left);
-        maxX = Math.max(maxX, bounds.right);
-        minY = Math.min(minY, bounds.top);
-        maxY = Math.max(maxY, bounds.bottom);
+        // Store absolute position (accounting for shape's offset)
+        const absPos = {
+          x: offsetX - (shape.offsetX() || 0),
+          y: offsetY - (shape.offsetY() || 0)
+        };
+        shapePositions.push(absPos);
 
         // Dragging
         shape.on('dragstart', () => {
@@ -231,7 +231,7 @@ terrainImage.onload = function() {
           unitLayer.draw();
         });
 
-        // Handle group dragging and shape rotation
+        // Handle group dragging and shape rotation (desktop)
         shape.on('mousedown', e => {
           if (groupDragMode && e.evt.button === 0) { // Left-click in Group Drag Mode to drag group
             console.log('Left-click on shape in Group Drag Mode, dragging group:', group);
@@ -245,42 +245,60 @@ terrainImage.onload = function() {
           }
         });
 
-        // Rotation for ellipses and rectangles in Model Drag Mode
+        // Mobile rotation for ellipses and rectangles in Model Drag Mode
         if (unitData.shape === 'ellipse' || unitData.shape === 'rectangle') {
-          // Mobile: Two-finger rotation
           let isRotating = false;
-          let initialTouchPos = { x: 0, y: 0 };
+          let rotationStartTime = 0;
+          let rotationCenter = { x: 0, y: 0 };
+          let secondTouchPos = { x: 0, y: 0 };
+
           shape.on('touchstart', e => {
             if (groupDragMode && e.evt.touches.length === 1) { // Single touch in Group Drag Mode to drag group
               console.log('Single touch on shape in Group Drag Mode, dragging group:', group);
               group.startDrag();
-            } else if (!groupDragMode && e.evt.touches.length === 2) { // Two-finger rotation in Model Drag Mode
+            } else if (!groupDragMode && e.evt.touches.length === 1) { // Long-press to start rotation
               e.evt.preventDefault();
-              isRotating = true;
-              const touch1 = e.evt.touches[0];
+              rotationStartTime = Date.now();
+              rotationCenter = stage.getPointerPosition();
+              setTimeout(() => {
+                if (Date.now() - rotationStartTime >= 500 && e.target === shape) {
+                  isRotating = true;
+                  console.log('Mobile rotation started (shape):', shape);
+                  shape.opacity(0.6);
+                  unitLayer.draw();
+                }
+              }, 500);
+            } else if (!groupDragMode && e.evt.touches.length === 2 && isRotating) { // Second finger to adjust rotation
+              e.evt.preventDefault();
               const touch2 = e.evt.touches[1];
-              initialTouchPos = { x: touch2.clientX - touch1.clientX, y: touch2.clientY - touch1.clientY };
-              console.log('Touch rotation start (shape):', initialTouchPos);
+              secondTouchPos = { x: touch2.clientX, y: touch2.clientY };
+              console.log('Mobile rotation second touch:', secondTouchPos);
             }
           });
+
           shape.on('touchmove', e => {
             if (isRotating && e.evt.touches.length === 2) {
-              const touch1 = e.evt.touches[0];
+              e.evt.preventDefault();
               const touch2 = e.evt.touches[1];
-              const currentAngle = Math.atan2(touch2.clientY - touch1.clientY, touch2.clientX - touch1.clientX);
-              const startAngle = Math.atan2(initialTouchPos.y, initialTouchPos.x);
-              const deltaAngle = (currentAngle - startAngle) * (180 / Math.PI);
-              shape.rotation(deltaAngle);
+              const currentPos = { x: touch2.clientX, y: touch2.clientY };
+              const deltaX = currentPos.x - secondTouchPos.x;
+              const deltaY = currentPos.y - secondTouchPos.y;
+              const angle = (deltaX * 0.5); // Scale for smooth rotation
+              shape.rotation(shape.rotation() + angle);
+              secondTouchPos = currentPos;
               unitLayer.draw();
             }
           });
+
           shape.on('touchend', () => {
             if (isRotating) {
               isRotating = false;
-              console.log('Touch rotation ended (shape), angle:', shape.rotation());
+              shape.opacity(0.8);
+              console.log('Mobile rotation ended (shape), angle:', shape.rotation());
               if (!groupDragMode) snapToEdge(shape, group);
               unitLayer.draw();
             }
+            rotationStartTime = 0;
           });
         }
 
@@ -289,14 +307,27 @@ terrainImage.onload = function() {
       index++;
     }
 
-    // Set group offset to center for rotation
-    const groupWidth = maxX - minX;
-    const groupHeight = maxY - minY;
-    group.offsetX(groupWidth / 2);
-    group.offsetY(groupHeight / 2);
-    console.log('Group center offset:', { offsetX: group.offsetX(), offsetY: group.offsetY() });
+    // Calculate group centroid
+    const centroid = shapePositions.reduce(
+      (acc, pos) => ({
+        x: acc.x + pos.x / shapePositions.length,
+        y: acc.y + pos.y / shapePositions.length
+      }),
+      { x: 0, y: 0 }
+    );
 
-    // Group rotation and dragging in Group Drag Mode
+    // Adjust shape positions relative to centroid
+    group.getChildren().forEach(shape => {
+      shape.x(shape.x() - centroid.x);
+      shape.y(shape.y() - centroid.y);
+    });
+
+    // Set group offset to centroid
+    group.offsetX(centroid.x);
+    group.offsetY(centroid.y);
+    console.log('Group centroid offset:', { offsetX: centroid.x, offsetY: centroid.y });
+
+    // Group rotation and dragging in Group Drag Mode (desktop)
     group.on('mousedown', e => {
       if (groupDragMode && !e.evt.shiftKey && e.evt.button === 0) { // Left-click without Shift to drag
         console.log('Left-click on group, starting drag:', group);
@@ -312,42 +343,61 @@ terrainImage.onload = function() {
       }
     });
 
-    // Mobile: Two-finger rotation for group
+    // Mobile rotation for group
     let isGroupRotating = false;
-    let initialGroupTouchPos = { x: 0, y: 0 };
+    let groupRotationStartTime = 0;
+    let groupRotationCenter = { x: 0, y: 0 };
+    let groupSecondTouchPos = { x: 0, y: 0 };
+
     group.on('touchstart', e => {
-      if (groupDragMode && e.evt.touches.length === 1 && !e.evt.shiftKey) { // Single touch without Shift to drag
+      if (groupDragMode && e.evt.touches.length === 1 && !e.evt.shiftKey) { // Single touch to drag
         console.log('Single touch on group, starting drag:', group);
         group.startDrag();
-      } else if (groupDragMode && e.evt.touches.length === 2) { // Two-finger rotation
+      } else if (groupDragMode && e.evt.touches.length === 1) { // Long-press to start rotation
         e.evt.preventDefault();
-        isGroupRotating = true;
-        const touch1 = e.evt.touches[0];
+        groupRotationStartTime = Date.now();
+        groupRotationCenter = stage.getPointerPosition();
+        setTimeout(() => {
+          if (Date.now() - groupRotationStartTime >= 500 && e.target === group) {
+            isGroupRotating = true;
+            console.log('Mobile rotation started (group):', group);
+            group.opacity(0.6);
+            unitLayer.draw();
+          }
+        }, 500);
+      } else if (groupDragMode && e.evt.touches.length === 2 && isGroupRotating) { // Second finger to adjust rotation
+        e.evt.preventDefault();
         const touch2 = e.evt.touches[1];
-        initialGroupTouchPos = { x: touch2.clientX - touch1.clientX, y: touch2.clientY - touch1.clientY };
-        console.log('Touch rotation start (group):', initialGroupTouchPos);
+        groupSecondTouchPos = { x: touch2.clientX, y: touch2.clientY };
+        console.log('Mobile rotation second touch (group):', groupSecondTouchPos);
       }
     });
+
     group.on('touchmove', e => {
       if (isGroupRotating && e.evt.touches.length === 2) {
-        const touch1 = e.evt.touches[0];
+        e.evt.preventDefault();
         const touch2 = e.evt.touches[1];
-        const currentAngle = Math.atan2(touch2.clientY - touch1.clientY, touch2.clientX - touch1.clientX);
-        const startAngle = Math.atan2(initialGroupTouchPos.y, initialGroupTouchPos.x);
-        const deltaAngle = (currentAngle - startAngle) * (180 / Math.PI);
-        group.rotation(deltaAngle);
+        const currentPos = { x: touch2.clientX, y: touch2.clientY };
+        const deltaX = currentPos.x - groupSecondTouchPos.x;
+        const deltaY = currentPos.y - groupSecondTouchPos.y;
+        const angle = (deltaX * 0.5); // Scale for smooth rotation
+        group.rotation(group.rotation() + angle);
+        groupSecondTouchPos = currentPos;
         unitLayer.draw();
       }
     });
+
     group.on('touchend', () => {
       if (isGroupRotating) {
         isGroupRotating = false;
-        console.log('Touch rotation ended (group), angle:', group.rotation());
+        group.opacity(1.0);
+        console.log('Mobile rotation ended (group), angle:', group.rotation());
         group.getChildren(node => node instanceof Konva.Circle || node instanceof Konva.Ellipse || node instanceof Konva.Rect).forEach(shape => {
           snapToEdge(shape, group);
         });
         unitLayer.draw();
       }
+      groupRotationStartTime = 0;
     });
 
     group.on('dragstart', () => {
