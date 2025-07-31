@@ -1,5 +1,5 @@
 const APP_PREFIX = 'DIVA_';
-const VERSION = 'version_02'; // Updated to force cache refresh
+const VERSION = 'version_03'; // Bumped to clear old caches
 const CACHE_NAME = APP_PREFIX + VERSION;
 const URLS = [
   '/diva/',
@@ -20,6 +20,7 @@ self.addEventListener('install', event => {
       return cache.addAll(URLS);
     })
   );
+  self.skipWaiting(); // Force immediate activation
 });
 
 // Clear outdated caches during activation
@@ -36,34 +37,42 @@ self.addEventListener('activate', event => {
       );
     })
   );
-  self.clients.claim();
+  self.clients.claim(); // Take control immediately
 });
 
-// Handle fetch requests (offline-first)
+// Handle fetch requests (network-first)
 self.addEventListener('fetch', event => {
-  console.log('Service Worker fetch:', event.request.url, event.request.mode); // Debug log
+  console.log('Service Worker fetch:', event.request.url, 'Mode:', event.request.mode);
   if (event.request.method !== 'GET') return;
+
   event.respondWith(
-    caches.match(event.request).then(response => {
-      if (response) {
-        console.log('Serving from cache:', event.request.url);
-        return response;
-      }
-      return fetch(event.request).then(networkResponse => {
-        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
-          return networkResponse;
-        }
+    // Try network first
+    fetch(event.request).then(networkResponse => {
+      console.log('Fetched from network:', event.request.url);
+      // Cache the new response
+      if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
         const responseToCache = networkResponse.clone();
         caches.open(CACHE_NAME).then(cache => {
           cache.put(event.request, responseToCache);
+          console.log('Cached:', event.request.url);
         });
-        console.log('Fetched from network:', event.request.url);
-        return networkResponse;
-      }).catch(() => {
+      }
+      return networkResponse;
+    }).catch(() => {
+      // Fallback to cache if network fails (offline)
+      console.log('Network failed, falling back to cache for:', event.request.url);
+      return caches.match(event.request).then(response => {
+        if (response) {
+          console.log('Served from cache:', event.request.url);
+          return response;
+        }
+        // Fallback to index.html for navigation requests
         if (event.request.mode === 'navigate') {
           console.log('Falling back to /diva/index.html for navigation');
           return caches.match('/diva/index.html');
         }
+        console.log('No cache found for:', event.request.url);
+        return new Response('Offline and no cached resource available', { status: 404 });
       });
     })
   );
