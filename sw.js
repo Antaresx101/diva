@@ -2,11 +2,11 @@ const APP_PREFIX = 'DIVA_';
 const VERSION = 'version_01';
 const CACHE_NAME = APP_PREFIX + VERSION;
 const URLS = [
-  '/',
-  '/index.html',
-  '/styles.css',
-  '/app.js',
-  '/assets/terrain.png'
+  '/diva/',
+  '/diva/index.html',
+  '/diva/styles.css',
+  '/diva/app.js',
+  '/diva/assets/terrain.png'
 ];
 
 // Cache resources during install
@@ -33,7 +33,7 @@ self.addEventListener('activate', event => {
       );
     })
   );
-  self.clients.claim(); // Take control immediately
+  self.clients.claim();
 });
 
 // Handle fetch requests (offline-first)
@@ -52,9 +52,8 @@ self.addEventListener('fetch', event => {
         return networkResponse;
       });
     }).catch(() => {
-      // Fallback to index.html for navigation requests
       if (event.request.mode === 'navigate') {
-        return caches.match('/index.html');
+        return caches.match('/diva/index.html');
       }
     })
   );

@@ -6,7 +6,7 @@ terrainImage.onload = function() {
   let width = containerRect.width;
   let height = containerRect.height;
 
-  // Ensure 44:60 aspect ratio
+  // 44:60 aspect ratio
   const targetAspect = 44 / 60;
   if (width / height > targetAspect) {
     width = height * targetAspect;
@@ -14,7 +14,7 @@ terrainImage.onload = function() {
     height = width / targetAspect;
   }
 
-  // Set stage size to computed container dimensions
+  // Set stage size
   const stage = new Konva.Stage({
     container: 'container',
     width: width,
@@ -29,7 +29,7 @@ terrainImage.onload = function() {
   const centerX = width / 2;
   const centerY = height / 2;
 
-  // Log dimensions for debugging
+  // Remove Later
   console.log('Viewport:', { width: window.innerWidth, height: window.innerHeight });
   console.log('Container rect:', { width: containerRect.width, height: containerRect.height });
   console.log('Stage dimensions:', { width, height, pxPerInchWidth, pxPerInchHeight });
@@ -40,7 +40,7 @@ terrainImage.onload = function() {
   const objectiveLayer = new Konva.Layer();
   const zoneLayer = new Konva.Layer();
   const unitLayer = new Konva.Layer();
-  stage.add(objectiveLayer, zoneLayer, terrainLayer, unitLayer);
+  stage.add(terrainLayer, objectiveLayer, zoneLayer, unitLayer);
 
   // Add terrain image
   const terrain = new Konva.Image({
@@ -61,7 +61,7 @@ terrainImage.onload = function() {
     { name: 'Termagant', shape: 'circle', radius: 0.4, color: 'purple', modelCount: 20 }
   ];
 
-  // Populate unit dropdown
+  // Unit dropdown
   const unitSelect = document.getElementById('unit-select');
   units.forEach(unit => {
     const option = document.createElement('option');
@@ -98,7 +98,7 @@ terrainImage.onload = function() {
     };
   }
 
-  // Snap shape to edge of overlapping shapes
+  // Snap shape to edges
   function snapToEdge(draggedShape, group) {
     const boundsA = getShapeBounds(draggedShape);
     let minDist = Infinity;
@@ -311,7 +311,6 @@ terrainImage.onload = function() {
         });
         unitLayer.draw();
       }
-      // Right-click without Shift or Shift + left-click does nothing
     });
 
     // Mobile: Two-finger rotation for group
@@ -410,7 +409,7 @@ terrainImage.onload = function() {
     }
   ];
 
-  // Log deployment zones
+  // Remove Later
   console.log('Deployment zones:', deploymentZones.map(zone => ({
     name: zone.name,
     lines: zone.lines.map(line => ({
