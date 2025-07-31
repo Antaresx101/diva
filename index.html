@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>DIVA</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://unpkg.com/konva@9/konva.min.js"></script>
+</head>
+<body>
+  <div id="container-wrapper">
+    <div id="container"></div>
+    <div id="controls">
+      <button id="cycle-zones">Cycle Deployment Zone</button>
+      <button id="cycle-objectives">Cycle Objectives</button>
+      <button id="toggle-drag-mode">Group Drag Mode</button>
+      <div id="unit-controls">
+        <select id="unit-select">
+          <option value="">Select Unit</option>
+        </select>
+        <button id="add-unit">Add Unit</button>
+      </div>
+    </div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

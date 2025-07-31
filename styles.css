@@ -1,0 +1,95 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #f0f0f0;
+  overflow: auto;
+}
+
+#container-wrapper {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  max-height: 100vh;
+}
+
+#container {
+  /* border: 1px solid black; */
+  width: 90vw;
+  max-height: calc(100vh - 70px);
+  aspect-ratio: 44 / 60; /* 44:60 ratio */
+  flex: 1 0 auto; /* Grow to fill available space, no shrink */
+  overflow: hidden; /* Clip overflow */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#controls {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  height: 60px;
+  overflow-x: auto; /* side-scrolling */
+  white-space: nowrap;
+  width: 90vw; /* Match canvas width */
+  flex: 0 0 auto;
+}
+
+#cycle-zones, #cycle-objectives, #add-unit, #toggle-drag-mode {
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+}
+
+#cycle-zones:hover, #cycle-objectives:hover, #add-unit:hover, #toggle-drag-mode:hover {
+  background-color: #45a049;
+}
+
+#unit-controls {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  align-items: center;
+}
+
+#unit-select {
+  padding: 8px;
+  font-size: 14px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  height: 36px;
+}
+
+@media (max-width: 600px) {
+  #container {
+    width: 95vw;
+    max-height: calc(100vh - 70px);
+  }
+  #controls {
+    width: 95vw;
+  }
+  #cycle-zones, #cycle-objectives, #add-unit, #toggle-drag-mode, #unit-select {
+    padding: 6px 12px;
+    font-size: 12px;
+    height: 32px;
+  }
+  #unit-select {
+    height: 32px;
+  }
+}
