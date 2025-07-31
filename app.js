@@ -84,7 +84,7 @@ terrainImage.onload = function() {
       });
     });
     unitLayer.draw();
-    document.getElementById('toggle-drag-mode').textContent = groupDragMode ? 'Group Drag Mode' : 'Model Drag Mode';
+    document.getElementById('toggle-drag-mode').textContent = groupDragMode ? 'Move Group' : 'Move Models';
   }
 
   // Get bounding box for a shape (handles rotation)
