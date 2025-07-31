@@ -55,10 +55,10 @@ terrainImage.onload = function() {
 
   // Unit list
   const units = [
-    { name: 'Space Marine', shape: 'circle', radius: 0.5, color: 'blue', modelCount: 5 },
-    { name: 'Ork Boy', shape: 'ellipse', radiusX: 0.6, radiusY: 0.4, color: 'green', modelCount: 10 },
-    { name: 'Dreadnought', shape: 'rectangle', width: 2, height: 1.5, color: 'red', modelCount: 1 },
-    { name: 'Termagant', shape: 'circle', radius: 0.4, color: 'purple', modelCount: 20 }
+    { name: 'Character', shape: 'circle', radius: 1, color: 'purple', modelCount: 1 },
+    { name: 'Infantry', shape: 'circle', radius: 0.65, color: 'blue', modelCount: 10 },
+    { name: 'Mounted', shape: 'ellipse', radiusX: 1.5, radiusY: 0.85, color: 'green', modelCount: 5 },
+    { name: 'Tank', shape: 'rectangle', width: 5, height: 3, color: 'red', modelCount: 1 }
   ];
 
   // Unit dropdown
@@ -243,7 +243,6 @@ terrainImage.onload = function() {
             if (!groupDragMode) snapToEdge(shape, group);
             unitLayer.draw();
           }
-          // Right-click without Shift does nothing
         });
 
         // Rotation for ellipses and rectangles in Model Drag Mode
