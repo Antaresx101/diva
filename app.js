@@ -343,72 +343,72 @@ terrainImage.onload = function() {
       }
     });
 
-    // Mobile rotation for group
+    // Mobile rotation for group (double-tap + drag)
     let isGroupRotating = false;
-    let groupRotationStartTime = 0;
-    let groupRotationCenter = { x: 0, y: 0 };
-    let groupSecondTouchPos = { x: 0, y: 0 };
+    let lastTouchPos = { x: 0, y: 0 };
+
+    group.on('dbltap', e => {
+      e.evt.preventDefault();
+      isGroupRotating = !isGroupRotating;
+      group.opacity(isGroupRotating ? 0.6 : 1.0);
+      group.draggable(isGroupRotating ? false : groupDragMode); // Disable dragging during rotation
+      console.log(`Mobile group rotation ${isGroupRotating ? 'started' : 'ended'} (group):`, group);
+      if (!isGroupRotating) {
+        group.getChildren(node => node instanceof Konva.Circle || node instanceof Konva.Ellipse || node instanceof Konva.Rect).forEach(shape => {
+          snapToEdge(shape, group);
+        });
+      }
+      unitLayer.draw();
+    });
 
     group.on('touchstart', e => {
-      if (groupDragMode && e.evt.touches.length === 1 && !e.evt.shiftKey) { // Single touch to drag
+      if (groupDragMode && e.evt.touches.length === 1 && !isGroupRotating) { // Single touch to drag, only if not rotating
         console.log('Single touch on group, starting drag:', group);
+        group.draggable(true); // Enable dragging
         group.startDrag();
-      } else if (groupDragMode && e.evt.touches.length === 1) { // Long-press to start rotation
-        e.evt.preventDefault();
-        groupRotationStartTime = Date.now();
-        groupRotationCenter = stage.getPointerPosition();
-        setTimeout(() => {
-          if (Date.now() - groupRotationStartTime >= 500 && e.target === group) {
-            isGroupRotating = true;
-            console.log('Mobile rotation started (group):', group);
-            group.opacity(0.6);
-            unitLayer.draw();
-          }
-        }, 500);
-      } else if (groupDragMode && e.evt.touches.length === 2 && isGroupRotating) { // Second finger to adjust rotation
-        e.evt.preventDefault();
-        const touch2 = e.evt.touches[1];
-        groupSecondTouchPos = { x: touch2.clientX, y: touch2.clientY };
-        console.log('Mobile rotation second touch (group):', groupSecondTouchPos);
+      } else if (isGroupRotating && e.evt.touches.length === 1) { // Store initial touch position for rotation
+        group.draggable(false); // Explicitly disable dragging
+        lastTouchPos = { x: e.evt.touches[0].clientX, y: e.evt.touches[0].clientY };
+        console.log('Mobile rotation touch start (group):', lastTouchPos);
       }
     });
 
     group.on('touchmove', e => {
-      if (isGroupRotating && e.evt.touches.length === 2) {
+      if (isGroupRotating && e.evt.touches.length === 1) {
         e.evt.preventDefault();
-        const touch2 = e.evt.touches[1];
-        const currentPos = { x: touch2.clientX, y: touch2.clientY };
-        const deltaX = currentPos.x - groupSecondTouchPos.x;
-        const deltaY = currentPos.y - groupSecondTouchPos.y;
-        const angle = (deltaX * 0.5); // Scale for smooth rotation
+        const currentPos = { x: e.evt.touches[0].clientX, y: e.evt.touches[0].clientY };
+        const deltaX = currentPos.x - lastTouchPos.x;
+        const angle = deltaX * 0.5; // Scale for smooth rotation
         group.rotation(group.rotation() + angle);
-        groupSecondTouchPos = currentPos;
+        lastTouchPos = currentPos;
+        console.log('Mobile group rotating, angle:', group.rotation());
         unitLayer.draw();
       }
     });
 
     group.on('touchend', () => {
       if (isGroupRotating) {
-        isGroupRotating = false;
-        group.opacity(1.0);
-        console.log('Mobile rotation ended (group), angle:', group.rotation());
-        group.getChildren(node => node instanceof Konva.Circle || node instanceof Konva.Ellipse || node instanceof Konva.Rect).forEach(shape => {
-          snapToEdge(shape, group);
-        });
-        unitLayer.draw();
+        console.log('Mobile group rotation touch ended, angle:', group.rotation());
+      } else {
+        group.draggable(false); // Reset draggable state
       }
-      groupRotationStartTime = 0;
     });
 
     group.on('dragstart', () => {
-      console.log('Dragging group:', group);
-      group.opacity(0.6);
-      unitLayer.draw();
+      if (!isGroupRotating) { // Only log drag if not in rotation mode
+        console.log('Dragging group:', group);
+        group.opacity(0.6);
+        unitLayer.draw();
+      }
     });
+
     group.on('dragend', () => {
-      console.log('Group drag ended:', group);
-      group.opacity(1.0);
-      unitLayer.draw();
+      if (!isGroupRotating) { // Only reset opacity if not in rotation mode
+        console.log('Group drag ended:', group);
+        group.opacity(1.0);
+        group.draggable(false); // Reset draggable state
+        unitLayer.draw();
+      }
     });
 
     unitLayer.add(group);
