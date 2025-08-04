@@ -70,21 +70,24 @@ terrainImage.onload = function() {
     unitSelect.appendChild(option);
   });
 
-  // Track drag mode
+  // Track drag mode and last interacted objects
   let groupDragMode = true;
-  let activeRotatingGroup = null;
-  let activeRotatingShape = null;
+  let lastInteractedGroup = null;
+  let lastInteractedShape = null;
 
   // Update drag mode
   function updateDragMode(isGroupMode) {
     console.log('Updating drag mode:', isGroupMode ? 'Group' : 'Model');
     groupDragMode = isGroupMode;
     unitLayer.getChildren(group => group instanceof Konva.Group).forEach(group => {
-      group.draggable(false); // Disable default dragging
+      group.draggable(isGroupMode);
       group.getChildren(node => node instanceof Konva.Circle || node instanceof Konva.Ellipse || node instanceof Konva.Rect).forEach(shape => {
         shape.draggable(!isGroupMode);
       });
     });
+    // Clear last interacted objects when switching modes
+    lastInteractedGroup = null;
+    lastInteractedShape = null;
     unitLayer.draw();
     document.getElementById('toggle-drag-mode').textContent = groupDragMode ? 'Move Group' : 'Move Models';
   }
@@ -143,7 +146,7 @@ terrainImage.onload = function() {
     const group = new Konva.Group({
       x: 100,
       y: 100,
-      draggable: false,
+      draggable: groupDragMode,
       rotation: 0
     });
 
@@ -224,6 +227,7 @@ terrainImage.onload = function() {
         shape.on('dragstart', () => {
           console.log('Dragging model:', shape);
           shape.opacity(0.5);
+          lastInteractedShape = shape;
           unitLayer.draw();
         });
         shape.on('dragend', () => {
@@ -233,55 +237,32 @@ terrainImage.onload = function() {
           unitLayer.draw();
         });
 
-        // Handle group dragging and shape rotation (desktop)
-        shape.on('mousedown', e => {
-          if (groupDragMode && e.evt.button === 0 && !activeRotatingGroup) { // Left-click in Group Drag Mode to drag group
-            console.log('Left-click on shape in Group Drag Mode, dragging group:', group);
+        // Handle group dragging and shape tap (desktop and mobile)
+        shape.on('tap mousedown', e => {
+          if (groupDragMode && e.evt.button === 0) { // Left-click or tap in Group Drag Mode to drag group
+            console.log('Tap or left-click on shape in Group Drag Mode, dragging group:', group);
+            group.draggable(true);
             group.startDrag();
-          } else if (!groupDragMode && (unitData.shape === 'ellipse' || unitData.shape === 'rectangle') && e.evt.button === 2 && e.evt.shiftKey) { // Shift + right-click in Model Drag Mode
-            e.evt.preventDefault();
-            shape.rotation(shape.rotation() + 5);
-            console.log('Rotated shape by 5 degrees, new angle:', shape.rotation());
-            if (!groupDragMode) snapToEdge(shape, group);
+            lastInteractedGroup = group;
+          } else if (!groupDragMode && (unitData.shape === 'ellipse' || unitData.shape === 'rectangle')) { // Tap in Model Drag Mode to select shape
+            console.log('Tapped shape in Model Drag Mode:', shape);
+            lastInteractedShape = shape;
+            shape.opacity(0.7);
             unitLayer.draw();
           }
         });
 
-        // Mobile rotation for ellipses and rectangles in Model Drag Mode
+        // Desktop rotation for ellipses and rectangles
         if (unitData.shape === 'ellipse' || unitData.shape === 'rectangle') {
-          shape.on('dbltap', e => {
-            e.evt.preventDefault();
-            if (activeRotatingShape === shape) {
-              // Exit rotation mode for this shape
-              shape.opacity(0.8);
-              activeRotatingShape = null;
-              shape.draggable(!groupDragMode);
-              console.log('Mobile shape rotation ended:', shape);
+          shape.on('mousedown', e => {
+            if (!groupDragMode && e.evt.button === 2 && e.evt.shiftKey) { // Shift + right-click in Model Drag Mode
+              e.evt.preventDefault();
+              shape.rotation(shape.rotation() + 5);
+              console.log('Rotated shape by 5 degrees, new angle:', shape.rotation());
               snapToEdge(shape, group);
-            } else {
-              // Exit rotation mode for previous shape or group
-              if (activeRotatingShape) {
-                activeRotatingShape.opacity(0.8);
-                activeRotatingShape.draggable(!groupDragMode);
-                snapToEdge(activeRotatingShape, activeRotatingShape.getParent());
-                console.log('Mobile shape rotation switched from:', activeRotatingShape);
-              }
-              if (activeRotatingGroup) {
-                activeRotatingGroup.opacity(1.0);
-                activeRotatingGroup.draggable(false);
-                activeRotatingGroup.getChildren(node => node instanceof Konva.Circle || node instanceof Konva.Ellipse || node instanceof Konva.Rect).forEach(s => {
-                  snapToEdge(s, activeRotatingGroup);
-                });
-                console.log('Mobile group rotation switched from:', activeRotatingGroup);
-                activeRotatingGroup = null;
-              }
-              // Enter rotation mode for this shape
-              activeRotatingShape = shape;
-              shape.opacity(0.7);
-              shape.draggable(false); // Disable dragging
-              console.log('Mobile shape rotation started:', shape);
+              lastInteractedShape = shape;
+              unitLayer.draw();
             }
-            unitLayer.draw();
           });
         }
 
@@ -310,11 +291,13 @@ terrainImage.onload = function() {
     group.offsetY(centroid.y);
     console.log('Group centroid offset:', { offsetX: centroid.x, offsetY: centroid.y });
 
-    // Group rotation and dragging in Group Drag Mode (desktop)
+    // Group dragging and rotation (desktop)
     group.on('mousedown', e => {
-      if (groupDragMode && !e.evt.shiftKey && e.evt.button === 0 && !activeRotatingGroup) { // Left-click without Shift to drag
+      if (groupDragMode && !e.evt.shiftKey && e.evt.button === 0) { // Left-click without Shift to drag
         console.log('Left-click on group, starting drag:', group);
+        group.draggable(true);
         group.startDrag();
+        lastInteractedGroup = group;
       } else if (groupDragMode && e.evt.button === 2 && e.evt.shiftKey) { // Shift + right-click to rotate
         e.evt.preventDefault();
         group.rotation(group.rotation() + 5);
@@ -322,114 +305,72 @@ terrainImage.onload = function() {
         group.getChildren(node => node instanceof Konva.Circle || node instanceof Konva.Ellipse || node instanceof Konva.Rect).forEach(shape => {
           snapToEdge(shape, group);
         });
+        lastInteractedGroup = group;
         unitLayer.draw();
       }
     });
 
-    // Mobile rotation for group (double-tap + tap)
-    group.on('dbltap', e => {
-      e.evt.preventDefault();
-      console.log('Double-tap on group:', group);
-      if (activeRotatingGroup === group) {
-        // Exit rotation mode for this group
-        group.opacity(1.0);
-        activeRotatingGroup = null;
-        group.draggable(false);
-        console.log('Mobile group rotation ended:', group);
-        group.getChildren(node => node instanceof Konva.Circle || node instanceof Konva.Ellipse || node instanceof Konva.Rect).forEach(shape => {
-          snapToEdge(shape, group);
-        });
-      } else {
-        // Exit rotation mode for previous group or shape
-        if (activeRotatingGroup) {
-          activeRotatingGroup.opacity(1.0);
-          activeRotatingGroup.draggable(false);
-          activeRotatingGroup.getChildren(node => node instanceof Konva.Circle || node instanceof Konva.Ellipse || node instanceof Konva.Rect).forEach(shape => {
-            snapToEdge(shape, activeRotatingGroup);
-          });
-          console.log('Mobile group rotation switched from:', activeRotatingGroup);
-        }
-        if (activeRotatingShape) {
-          activeRotatingShape.opacity(0.8);
-          activeRotatingShape.draggable(!groupDragMode);
-          snapToEdge(activeRotatingShape, activeRotatingShape.getParent());
-          console.log('Mobile shape rotation switched from:', activeRotatingShape);
-          activeRotatingShape = null;
-        }
-        // Enter rotation mode for this group
-        activeRotatingGroup = group;
-        group.opacity(0.7);
-        group.draggable(false); // Disable dragging
-        console.log('Mobile group rotation started:', group);
-      }
-      unitLayer.draw();
-    });
-
-    group.on('touchstart', e => {
-      if (groupDragMode && e.evt.touches.length === 1 && !activeRotatingGroup) { // Single touch to drag, only if no group is rotating
-        console.log('Single touch on group, starting drag:', group);
-        group.draggable(true); // Enable dragging
+    // Group tap and drag (mobile)
+    group.on('tap touchstart', e => {
+      if (groupDragMode && e.evt.touches?.length === 1) { // Single touch or tap to drag
+        console.log('Tap or single touch on group, starting drag:', group);
+        group.draggable(true);
         group.startDrag();
+        lastInteractedGroup = group;
       }
     });
 
     group.on('dragstart', () => {
-      if (!activeRotatingGroup) { // Only log drag if no group is rotating
-        console.log('Dragging group:', group);
-        group.opacity(0.6);
-        unitLayer.draw();
-      }
+      console.log('Dragging group:', group);
+      group.opacity(0.6);
+      lastInteractedGroup = group;
+      unitLayer.draw();
     });
 
     group.on('dragend', () => {
-      if (!activeRotatingGroup) { // Only reset opacity if no group is rotating
-        console.log('Group drag ended:', group);
-        group.opacity(1.0);
-        group.draggable(false); // Reset draggable state
-        unitLayer.draw();
-      }
+      console.log('Group drag ended:', group);
+      group.opacity(1.0);
+      group.draggable(groupDragMode);
+      unitLayer.draw();
     });
 
     unitLayer.add(group);
     unitLayer.draw();
   }
 
-  // Handle single tap for rotation and double-tap on stage to cancel
+  // Handle stage tap for rotation or cancellation
   stage.on('tap', e => {
-    console.log('Stage tap detected, groupDragMode:', groupDragMode, 'activeRotatingGroup:', activeRotatingGroup, 'activeRotatingShape:', activeRotatingShape);
-    if (groupDragMode && activeRotatingGroup) {
-      activeRotatingGroup.rotation(activeRotatingGroup.rotation() + 5);
-      console.log('Mobile group rotated by 5 degrees, angle:', activeRotatingGroup.rotation());
-      activeRotatingGroup.getChildren(node => node instanceof Konva.Circle || node instanceof Konva.Ellipse || node instanceof Konva.Rect).forEach(shape => {
-        snapToEdge(shape, activeRotatingGroup);
+    const pos = stage.getPointerPosition();
+    const isOutsideTerrain = pos.x < 0 || pos.x > width || pos.y < 0 || pos.y > height;
+
+    if (isOutsideTerrain) {
+      // Cancel rotation mode by clearing last interacted objects
+      if (lastInteractedGroup) {
+        console.log('Tapped outside terrain, clearing last interacted group:', lastInteractedGroup);
+        lastInteractedGroup.opacity(1.0);
+        lastInteractedGroup = null;
+      }
+      if (lastInteractedShape) {
+        console.log('Tapped outside terrain, clearing last interacted shape:', lastInteractedShape);
+        lastInteractedShape.opacity(0.8);
+        lastInteractedShape = null;
+      }
+      unitLayer.draw();
+      return;
+    }
+
+    // Rotate last interacted group or shape
+    if (groupDragMode && lastInteractedGroup) {
+      lastInteractedGroup.rotation(lastInteractedGroup.rotation() + 5);
+      console.log('Rotated group by 5 degrees, angle:', lastInteractedGroup.rotation());
+      lastInteractedGroup.getChildren(node => node instanceof Konva.Circle || node instanceof Konva.Ellipse || node instanceof Konva.Rect).forEach(shape => {
+        snapToEdge(shape, lastInteractedGroup);
       });
       unitLayer.draw();
-    } else if (!groupDragMode && activeRotatingShape) {
-      activeRotatingShape.rotation(activeRotatingShape.rotation() + 5);
-      console.log('Mobile shape rotated by 5 degrees, angle:', activeRotatingShape.rotation());
-      snapToEdge(activeRotatingShape, activeRotatingShape.getParent());
-      unitLayer.draw();
-    }
-  });
-
-  stage.on('dbltap', e => {
-    if (e.target === stage) {
-      if (activeRotatingGroup) {
-        activeRotatingGroup.opacity(1.0);
-        activeRotatingGroup.draggable(false);
-        activeRotatingGroup.getChildren(node => node instanceof Konva.Circle || node instanceof Konva.Ellipse || node instanceof Konva.Rect).forEach(shape => {
-          snapToEdge(shape, activeRotatingGroup);
-        });
-        console.log('Mobile group rotation canceled via stage double-tap:', activeRotatingGroup);
-        activeRotatingGroup = null;
-      }
-      if (activeRotatingShape) {
-        activeRotatingShape.opacity(0.8);
-        activeRotatingShape.draggable(!groupDragMode);
-        snapToEdge(activeRotatingShape, activeRotatingShape.getParent());
-        console.log('Mobile shape rotation canceled via stage double-tap:', activeRotatingShape);
-        activeRotatingShape = null;
-      }
+    } else if (!groupDragMode && lastInteractedShape && (lastInteractedShape instanceof Konva.Ellipse || lastInteractedShape instanceof Konva.Rect)) {
+      lastInteractedShape.rotation(lastInteractedShape.rotation() + 5);
+      console.log('Rotated shape by 5 degrees, angle:', lastInteractedShape.rotation());
+      snapToEdge(lastInteractedShape, lastInteractedShape.getParent());
       unitLayer.draw();
     }
   });
