@@ -137,6 +137,45 @@ terrainImage.onload = function() {
     console.log('Snapped shape to:', bestPos);
   }
 
+  // Calculate the center of the bounding box for a group and update its offset
+  function updateGroupRotationCenter(group) {
+    const shapes = group.getChildren(node => node instanceof Konva.Circle || node instanceof Konva.Ellipse || node instanceof Konva.Rect);
+    if (shapes.length === 0) return;
+
+    // Get the bounding box that encapsulates all shapes
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    shapes.forEach(shape => {
+      const bounds = getShapeBounds(shape);
+      minX = Math.min(minX, bounds.left);
+      maxX = Math.max(maxX, bounds.right);
+      minY = Math.min(minY, bounds.top);
+      maxY = Math.max(maxY, bounds.bottom);
+    });
+
+    // Calculate the center of the bounding box
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+
+    // Store current group position
+    const groupPos = { x: group.x(), y: group.y() };
+
+    // Set group offset to the new center
+    group.offsetX(centerX);
+    group.offsetY(centerY);
+
+    // Adjust shape positions to maintain visual positions
+    shapes.forEach(shape => {
+      shape.x(shape.x() - centerX);
+      shape.y(shape.y() - centerY);
+    });
+
+    // Adjust group position to keep shapes in place
+    group.x(groupPos.x + centerX);
+    group.y(groupPos.y + centerY);
+
+    console.log('Updated group rotation center:', { centerX, centerY });
+  }
+
   // Add unit to canvas
   function addUnit(unitName) {
     const unitData = units.find(u => u.name === unitName);
@@ -300,6 +339,7 @@ terrainImage.onload = function() {
         lastInteractedGroup = group;
       } else if (groupDragMode && e.evt.button === 2 && e.evt.shiftKey) { // Shift + right-click to rotate
         e.evt.preventDefault();
+        updateGroupRotationCenter(group);
         group.rotation(group.rotation() + 5);
         console.log('Rotated group by 5 degrees, new angle:', group.rotation());
         group.getChildren(node => node instanceof Konva.Circle || node instanceof Konva.Ellipse || node instanceof Konva.Rect).forEach(shape => {
@@ -361,6 +401,7 @@ terrainImage.onload = function() {
 
     // Rotate last interacted group or shape
     if (groupDragMode && lastInteractedGroup) {
+      updateGroupRotationCenter(lastInteractedGroup);
       lastInteractedGroup.rotation(lastInteractedGroup.rotation() + 5);
       console.log('Rotated group by 5 degrees, angle:', lastInteractedGroup.rotation());
       lastInteractedGroup.getChildren(node => node instanceof Konva.Circle || node instanceof Konva.Ellipse || node instanceof Konva.Rect).forEach(shape => {
