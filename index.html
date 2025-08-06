@@ -1,149 +1,47 @@
-* {
-  box-sizing: border-box;
-}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>DIVA</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="manifest" href="/diva/manifest.json">
+  <meta name="theme-color" content="#1d2521">
+  <link rel="icon" href="/diva/icons/icon-192x192.png" type="image/png">
+  <link rel="apple-touch-icon" href="/diva/icons/icon-192x192.png">
+  <script src="https://cdn.jsdelivr.net/npm/konva@8.3.5/konva.min.js"></script>
+</head>
+<body>
+  <div id="container-wrapper">
+    <div id="container"></div>
+    <div id="controls">
+      <button id="toggle-sidebar">Toggle Roster</button>
+      <button id="toggle-drag-mode">Move Group</button>
+      <button id="cycle-zones">Cycle Deployment Zone</button>
+      <button id="cycle-objectives">Cycle Objectives</button>
 
-body {
-  margin: 0;
-  padding: 0;
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: #f0f0f0;
-  overflow: auto;
-}
-
-#container-wrapper {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  max-height: 100vh;
-}
-
-#container {
-  width: 90vw;
-  max-height: calc(100vh - 70px);
-  aspect-ratio: 44 / 60;
-  flex: 1 0 auto;
-  overflow: hidden;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-#controls {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 10px;
-  padding: 10px;
-  height: 60px;
-  overflow-x: auto;
-  white-space: nowrap;
-  width: 90vw;
-  flex: 0 0 auto;
-}
-
-#cycle-zones, #cycle-objectives, #toggle-drag-mode, #toggle-sidebar, #spawn-unit {
-  padding: 8px 16px;
-  font-size: 14px;
-  cursor: pointer;
-  background-color: #162438;
-  color: white;
-  border: none;
-  border-radius: 5px;
-}
-
-#cycle-zones:hover, #cycle-objectives:hover, #toggle-drag-mode:hover, #toggle-sidebar:hover, #spawn-unit:hover {
-  background-color: #162438;
-}
-
-#sidebar {
-  position: fixed;
-  right: 0;
-  top: 0;
-  height: 100vh;
-  width: 250px;
-  background-color: #505268;
-  color: white;
-  transform: translateX(100%);
-  transition: transform 0.3s ease-in-out;
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
-}
-
-#sidebar.open {
-  transform: translateX(0);
-}
-
-#toggle-sidebar {
-  position: static;
-  margin-left: 10px;
-}
-
-#roster {
-  padding: 10px;
-  flex: 1;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-}
-
-#roster h3 {
-  margin: 0 0 10px 0;
-}
-
-#roster-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  flex: 1;
-}
-
-.roster-item {
-  padding: 7.5px;
-  margin: 5px 0;
-  background-color: #162438;
-  border-radius: 5px;
-  cursor: move;
-  user-select: none;
-}
-
-.roster-item:hover {
-  background-color: #2e4b75;
-}
-
-.roster-item.selected {
-  background-color: #2e4b75;
-  border: 2px solid #162438;
-}
-
-.roster-item.dragging {
-  opacity: 0.5;
-}
-
-#spawn-unit {
-  margin-top: 10px;
-  align-self: stretch;
-}
-
-@media (max-width: 600px) {
-  #container {
-    width: 95vw;
-    max-height: calc(100vh - 70px);
-  }
-  #controls {
-    width: 95vw;
-  }
-  #cycle-zones, #cycle-objectives, #toggle-drag-mode, #toggle-sidebar, #spawn-unit {
-    padding: 6px 12px;
-    font-size: 12px;
-    height: 32px;
-  }
-  #sidebar {
-    width: 200px;
-  }
-}
+    </div>
+  </div>
+  <div id="sidebar">
+    <div id="roster">
+      <h3>Unit Roster</h3>
+      <ul id="roster-list"></ul>
+      <button id="spawn-unit">Spawn Unit</button>
+    </div>
+  </div>
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/diva/sw.js', { scope: '/diva/' })
+          .then(registration => {
+            console.log('Service Worker registered:', registration);
+          })
+          .catch(err => {
+            console.log('Service Worker registration failed:', err);
+          });
+      });
+    }
+  </script>
+</body>
+</html>
