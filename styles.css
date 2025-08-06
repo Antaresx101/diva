@@ -146,8 +146,4 @@ body {
   #sidebar {
     width: 200px;
   }
-  #toggle-sidebar {
-    left: -50px;
-    width: 50px;
-  }
 }
