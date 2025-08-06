@@ -29,12 +29,6 @@ terrainImage.onload = function() {
   const centerX = width / 2;
   const centerY = height / 2;
 
-  // Remove Later
-  console.log('Viewport:', { width: window.innerWidth, height: window.innerHeight });
-  console.log('Container rect:', { width: containerRect.width, height: containerRect.height });
-  console.log('Stage dimensions:', { width, height, pxPerInchWidth, pxPerInchHeight });
-  console.log('Stage position:', { x: stage.x(), y: stage.y() });
-
   // Layers
   const terrainLayer = new Konva.Layer();
   const objectiveLayer = new Konva.Layer();
@@ -42,7 +36,7 @@ terrainImage.onload = function() {
   const unitLayer = new Konva.Layer();
   stage.add(terrainLayer, objectiveLayer, zoneLayer, unitLayer);
 
-  // Add terrain image
+  // Terrain image
   const terrain = new Konva.Image({
     image: terrainImage,
     x: 0,
@@ -51,29 +45,34 @@ terrainImage.onload = function() {
     height: height
   });
   terrainLayer.add(terrain);
-  console.log('Terrain image position:', { x: terrain.x(), y: terrain.y(), width: terrain.width(), height: terrain.height() });
 
-  // Unit list
+  // Unit list with roster data
   const units = [
-    { name: 'Character', shape: 'circle', radius: 1, color: 'purple', modelCount: 1 },
-    { name: 'Infantry', shape: 'circle', radius: 0.65, color: 'blue', modelCount: 10 },
-    { name: 'Mounted', shape: 'ellipse', radiusX: 1.5, radiusY: 0.85, color: 'green', modelCount: 5 },
-    { name: 'Tank', shape: 'rectangle', width: 5, height: 3, color: 'red', modelCount: 1 }
+    { name: 'Captain', shape: 'circle', radius: 1, color: 'purple', modelCount: 1, baseSize: '40mm' },
+    { name: 'Marines', shape: 'circle', radius: 0.65, color: 'blue', modelCount: 10, baseSize: '32mm' },
+    { name: 'Bikers', shape: 'ellipse', radiusX: 1.5, radiusY: 0.85, color: 'green', modelCount: 5, baseSize: '75x42mm' },
+    { name: 'Tank', shape: 'rectangle', width: 5, height: 3, color: 'red', modelCount: 1, baseSize: '60mm' }
   ];
 
-  // Unit dropdown
-  const unitSelect = document.getElementById('unit-select');
+  // Populate roster
+  const rosterList = document.getElementById('roster-list');
+  let selectedUnitName = units[0].name;
   units.forEach(unit => {
-    const option = document.createElement('option');
-    option.value = unit.name;
-    option.textContent = unit.name;
-    unitSelect.appendChild(option);
+    const li = document.createElement('li');
+    li.className = 'roster-item';
+    li.draggable = true;
+    li.dataset.unitName = unit.name;
+    li.textContent = `${unit.name} (${unit.modelCount} models, ${unit.baseSize})`;
+    if (unit.name === selectedUnitName) {
+      li.classList.add('selected');
+    }
+    rosterList.appendChild(li);
   });
 
-  // Track drag mode and last interacted objects
+  // Track drag mode
   let groupDragMode = true;
-  let lastInteractedGroup = null;
-  let lastInteractedShape = null;
+  let activeRotatingGroup = null;
+  let activeRotatingShape = null;
 
   // Update drag mode
   function updateDragMode(isGroupMode) {
@@ -85,14 +84,11 @@ terrainImage.onload = function() {
         shape.draggable(!isGroupMode);
       });
     });
-    // Clear last interacted objects when switching modes
-    lastInteractedGroup = null;
-    lastInteractedShape = null;
     unitLayer.draw();
     document.getElementById('toggle-drag-mode').textContent = groupDragMode ? 'Move Group' : 'Move Models';
   }
 
-  // Get bounding box for a shape (handles rotation)
+  // Get bounding box for shape (rotation)
   function getShapeBounds(shape) {
     const rect = shape.getClientRect({ relativeTo: shape.getParent() });
     return {
@@ -112,7 +108,7 @@ terrainImage.onload = function() {
     group.getChildren(node => node !== draggedShape && (node instanceof Konva.Circle || node instanceof Konva.Ellipse || node instanceof Konva.Rect)).forEach(other => {
       const boundsB = getShapeBounds(other);
 
-      // Check for overlap using AABB
+      // Check for overlap with AABB
       if (boundsA.left < boundsB.right && boundsA.right > boundsB.left && boundsA.top < boundsB.bottom && boundsA.bottom > boundsB.top) {
         // Calculate translations to resolve overlap
         const translations = [
@@ -137,54 +133,23 @@ terrainImage.onload = function() {
     console.log('Snapped shape to:', bestPos);
   }
 
-  // Calculate the center of the bounding box for a group and update its offset
-  function updateGroupRotationCenter(group) {
-    const shapes = group.getChildren(node => node instanceof Konva.Circle || node instanceof Konva.Ellipse || node instanceof Konva.Rect);
-    if (shapes.length === 0) return;
-
-    // Get the bounding box that encapsulates all shapes
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-    shapes.forEach(shape => {
-      const bounds = getShapeBounds(shape);
-      minX = Math.min(minX, bounds.left);
-      maxX = Math.max(maxX, bounds.right);
-      minY = Math.min(minY, bounds.top);
-      maxY = Math.max(maxY, bounds.bottom);
-    });
-
-    // Calculate the center of the bounding box
-    const centerX = (minX + maxX) / 2;
-    const centerY = (minY + maxY) / 2;
-
-    // Store current group position
-    const groupPos = { x: group.x(), y: group.y() };
-
-    // Set group offset to the new center
-    group.offsetX(centerX);
-    group.offsetY(centerY);
-
-    // Adjust shape positions to maintain visual positions
-    shapes.forEach(shape => {
-      shape.x(shape.x() - centerX);
-      shape.y(shape.y() - centerY);
-    });
-
-    // Adjust group position to keep shapes in place
-    group.x(groupPos.x + centerX);
-    group.y(groupPos.y + centerY);
-
-    console.log('Updated group rotation center:', { centerX, centerY });
-  }
-
   // Add unit to canvas
-  function addUnit(unitName) {
+  function addUnit(unitName, x = 100, y = 100) {
     const unitData = units.find(u => u.name === unitName);
-    if (!unitData) return;
+    if (!unitData) {
+      console.warn(`Unit not found: ${unitName}`);
+      return;
+    }
+
+    // Clamp position to stage boundaries
+    const padding = 10; // Small padding to keep units fully visible
+    x = Math.max(padding, Math.min(x, width - padding));
+    y = Math.max(padding, Math.min(y, height - padding));
 
     // Create group
     const group = new Konva.Group({
-      x: 100,
-      y: 100,
+      x: x,
+      y: y,
       draggable: groupDragMode,
       rotation: 0
     });
@@ -193,9 +158,9 @@ terrainImage.onload = function() {
     const cols = Math.ceil(Math.sqrt(modelCount));
     const spacing = 0.1;
     let index = 0;
-    const shapePositions = []; // Store absolute positions for centroid
+    const shapePositions = [];
 
-    // Create shapes and track absolute positions
+    // Create shapes
     for (let i = 0; i < modelCount; i++) {
       const row = Math.floor(index / cols);
       const col = index % cols;
@@ -255,7 +220,7 @@ terrainImage.onload = function() {
       }
 
       if (shape) {
-        // Store absolute position (accounting for shape's offset)
+        // Store absolute position (accounting for shape offset)
         const absPos = {
           x: offsetX - (shape.offsetX() || 0),
           y: offsetY - (shape.offsetY() || 0)
@@ -266,7 +231,6 @@ terrainImage.onload = function() {
         shape.on('dragstart', () => {
           console.log('Dragging model:', shape);
           shape.opacity(0.5);
-          lastInteractedShape = shape;
           unitLayer.draw();
         });
         shape.on('dragend', () => {
@@ -276,32 +240,52 @@ terrainImage.onload = function() {
           unitLayer.draw();
         });
 
-        // Handle group dragging and shape tap (desktop and mobile)
-        shape.on('tap mousedown', e => {
-          if (groupDragMode && e.evt.button === 0) { // Left-click or tap in Group Drag Mode to drag group
-            console.log('Tap or left-click on shape in Group Drag Mode, dragging group:', group);
-            group.draggable(true);
+        // Handle group dragging and shape rotation (desktop)
+        shape.on('mousedown', e => {
+          if (groupDragMode && e.evt.button === 0 && !activeRotatingGroup) {
+            console.log('Left-click on shape in Group Drag Mode, dragging group:', group);
             group.startDrag();
-            lastInteractedGroup = group;
-          } else if (!groupDragMode && (unitData.shape === 'ellipse' || unitData.shape === 'rectangle')) { // Tap in Model Drag Mode to select shape
-            console.log('Tapped shape in Model Drag Mode:', shape);
-            lastInteractedShape = shape;
-            shape.opacity(0.7);
+          } else if (!groupDragMode && (unitData.shape === 'ellipse' || unitData.shape === 'rectangle') && e.evt.button === 2 && e.evt.shiftKey) {
+            e.evt.preventDefault();
+            shape.rotation(shape.rotation() + 5);
+            console.log('Rotated shape by 5 degrees, new angle:', shape.rotation());
+            if (!groupDragMode) snapToEdge(shape, group);
             unitLayer.draw();
           }
         });
 
-        // Desktop rotation for ellipses and rectangles
+        // Mobile rotation for ellipses and rectangles
         if (unitData.shape === 'ellipse' || unitData.shape === 'rectangle') {
-          shape.on('mousedown', e => {
-            if (!groupDragMode && e.evt.button === 2 && e.evt.shiftKey) { // Shift + right-click in Model Drag Mode
-              e.evt.preventDefault();
-              shape.rotation(shape.rotation() + 5);
-              console.log('Rotated shape by 5 degrees, new angle:', shape.rotation());
+          shape.on('dbltap', e => {
+            e.evt.preventDefault();
+            if (activeRotatingShape === shape) {
+              shape.opacity(0.8);
+              activeRotatingShape = null;
+              shape.draggable(!groupDragMode);
+              console.log('Mobile shape rotation ended:', shape);
               snapToEdge(shape, group);
-              lastInteractedShape = shape;
-              unitLayer.draw();
+            } else {
+              if (activeRotatingShape) {
+                activeRotatingShape.opacity(0.8);
+                activeRotatingShape.draggable(!groupDragMode);
+                snapToEdge(activeRotatingShape, activeRotatingShape.getParent());
+                console.log('Mobile shape rotation switched from:', activeRotatingShape);
+              }
+              if (activeRotatingGroup) {
+                activeRotatingGroup.opacity(1.0);
+                activeRotatingGroup.draggable(groupDragMode);
+                activeRotatingGroup.getChildren(node => node instanceof Konva.Circle || node instanceof Konva.Ellipse || node instanceof Konva.Rect).forEach(s => {
+                  snapToEdge(s, activeRotatingGroup);
+                });
+                console.log('Mobile group rotation switched from:', activeRotatingGroup);
+                activeRotatingGroup = null;
+              }
+              activeRotatingShape = shape;
+              shape.opacity(0.7);
+              shape.draggable(false);
+              console.log('Mobile shape rotation started:', shape);
             }
+            unitLayer.draw();
           });
         }
 
@@ -310,123 +294,211 @@ terrainImage.onload = function() {
       index++;
     }
 
-    // Calculate group centroid
-    const centroid = shapePositions.reduce(
-      (acc, pos) => ({
-        x: acc.x + pos.x / shapePositions.length,
-        y: acc.y + pos.y / shapePositions.length
-      }),
-      { x: 0, y: 0 }
-    );
+    // Centroid calculation (skip for single-model units)
+    if (modelCount > 1) {
+      const centroid = shapePositions.reduce(
+        (acc, pos) => ({
+          x: acc.x + pos.x / shapePositions.length,
+          y: acc.y + pos.y / shapePositions.length
+        }),
+        { x: 0, y: 0 }
+      );
 
-    // Adjust shape positions relative to centroid
-    group.getChildren().forEach(shape => {
-      shape.x(shape.x() - centroid.x);
-      shape.y(shape.y() - centroid.y);
-    });
+      // Adjust shape positions relative to centroid
+      group.getChildren().forEach(shape => {
+        shape.x(shape.x() - centroid.x);
+        shape.y(shape.y() - centroid.y);
+      });
 
-    // Set group offset to centroid
-    group.offsetX(centroid.x);
-    group.offsetY(centroid.y);
-    console.log('Group centroid offset:', { offsetX: centroid.x, offsetY: centroid.y });
+      // Set group offset to centroid
+      group.offsetX(centroid.x);
+      group.offsetY(centroid.y);
+      console.log('Group centroid offset:', { offsetX: centroid.x, offsetY: centroid.y });
+    }
 
-    // Group dragging and rotation (desktop)
+    // Group rotation and dragging in Group Drag Mode (desktop)
     group.on('mousedown', e => {
-      if (groupDragMode && !e.evt.shiftKey && e.evt.button === 0) { // Left-click without Shift to drag
+      if (groupDragMode && !e.evt.shiftKey && e.evt.button === 0 && !activeRotatingGroup) {
         console.log('Left-click on group, starting drag:', group);
-        group.draggable(true);
         group.startDrag();
-        lastInteractedGroup = group;
-      } else if (groupDragMode && e.evt.button === 2 && e.evt.shiftKey) { // Shift + right-click to rotate
+      } else if (groupDragMode && e.evt.button === 2 && e.evt.shiftKey) {
         e.evt.preventDefault();
-        updateGroupRotationCenter(group);
         group.rotation(group.rotation() + 5);
         console.log('Rotated group by 5 degrees, new angle:', group.rotation());
         group.getChildren(node => node instanceof Konva.Circle || node instanceof Konva.Ellipse || node instanceof Konva.Rect).forEach(shape => {
           snapToEdge(shape, group);
         });
-        lastInteractedGroup = group;
         unitLayer.draw();
       }
     });
 
-    // Group tap and drag (mobile)
-    group.on('tap touchstart', e => {
-      if (groupDragMode && e.evt.touches?.length === 1) { // Single touch or tap to drag
-        console.log('Tap or single touch on group, starting drag:', group);
+    // Mobile rotation for group (double-tap + tap)
+    group.on('dbltap', e => {
+      e.evt.preventDefault();
+      console.log('Double-tap on group:', group);
+      if (activeRotatingGroup === group) {
+        group.opacity(1.0);
+        activeRotatingGroup = null;
+        group.draggable(groupDragMode);
+        console.log('Mobile group rotation ended:', group);
+        group.getChildren(node => node instanceof Konva.Circle || node instanceof Konva.Ellipse || node instanceof Konva.Rect).forEach(shape => {
+          snapToEdge(shape, group);
+        });
+      } else {
+        if (activeRotatingGroup) {
+          activeRotatingGroup.opacity(1.0);
+          activeRotatingGroup.draggable(groupDragMode);
+          activeRotatingGroup.getChildren(node => node instanceof Konva.Circle || node instanceof Konva.Ellipse || node instanceof Konva.Rect).forEach(shape => {
+            snapToEdge(shape, activeRotatingGroup);
+          });
+          console.log('Mobile group rotation switched from:', activeRotatingGroup);
+        }
+        if (activeRotatingShape) {
+          activeRotatingShape.opacity(0.8);
+          activeRotatingShape.draggable(!groupDragMode);
+          snapToEdge(activeRotatingShape, activeRotatingShape.getParent());
+          console.log('Mobile shape rotation switched from:', activeRotatingShape);
+          activeRotatingShape = null;
+        }
+        activeRotatingGroup = group;
+        group.opacity(0.7);
+        group.draggable(false);
+        console.log('Mobile group rotation started:', group);
+      }
+      unitLayer.draw();
+    });
+
+    group.on('touchstart', e => {
+      if (groupDragMode && e.evt.touches.length === 1 && !activeRotatingGroup) {
+        console.log('Single touch on group, starting drag:', group);
         group.draggable(true);
         group.startDrag();
-        lastInteractedGroup = group;
       }
     });
 
     group.on('dragstart', () => {
-      console.log('Dragging group:', group);
-      group.opacity(0.6);
-      lastInteractedGroup = group;
-      unitLayer.draw();
+      if (!activeRotatingGroup) {
+        console.log('Dragging group:', group);
+        group.opacity(0.6);
+        unitLayer.draw();
+      }
     });
 
     group.on('dragend', () => {
-      console.log('Group drag ended:', group);
-      group.opacity(1.0);
-      group.draggable(groupDragMode);
-      unitLayer.draw();
+      if (!activeRotatingGroup) {
+        console.log('Group drag ended:', group);
+        group.opacity(1.0);
+        group.draggable(groupDragMode); // Respect groupDragMode
+        unitLayer.draw();
+      }
     });
 
     unitLayer.add(group);
     unitLayer.draw();
   }
 
-  // Handle stage tap for rotation or cancellation
+  // Handle single tap for rotation and double-tap on stage to cancel
   stage.on('tap', e => {
-    const pos = stage.getPointerPosition();
-    const isOutsideTerrain = pos.x < 0 || pos.x > width || pos.y < 0 || pos.y > height;
-
-    if (isOutsideTerrain) {
-      // Cancel rotation mode by clearing last interacted objects
-      if (lastInteractedGroup) {
-        console.log('Tapped outside terrain, clearing last interacted group:', lastInteractedGroup);
-        lastInteractedGroup.opacity(1.0);
-        lastInteractedGroup = null;
-      }
-      if (lastInteractedShape) {
-        console.log('Tapped outside terrain, clearing last interacted shape:', lastInteractedShape);
-        lastInteractedShape.opacity(0.8);
-        lastInteractedShape = null;
-      }
-      unitLayer.draw();
-      return;
-    }
-
-    // Rotate last interacted group or shape
-    if (groupDragMode && lastInteractedGroup) {
-      updateGroupRotationCenter(lastInteractedGroup);
-      lastInteractedGroup.rotation(lastInteractedGroup.rotation() + 5);
-      console.log('Rotated group by 5 degrees, angle:', lastInteractedGroup.rotation());
-      lastInteractedGroup.getChildren(node => node instanceof Konva.Circle || node instanceof Konva.Ellipse || node instanceof Konva.Rect).forEach(shape => {
-        snapToEdge(shape, lastInteractedGroup);
+    console.log('Stage tap detected, groupDragMode:', groupDragMode, 'activeRotatingGroup:', activeRotatingGroup, 'activeRotatingShape:', activeRotatingShape);
+    if (groupDragMode && activeRotatingGroup) {
+      activeRotatingGroup.rotation(activeRotatingGroup.rotation() + 5);
+      console.log('Mobile group rotated by 5 degrees, angle:', activeRotatingGroup.rotation());
+      activeRotatingGroup.getChildren(node => node instanceof Konva.Circle || node instanceof Konva.Ellipse || node instanceof Konva.Rect).forEach(shape => {
+        snapToEdge(shape, activeRotatingGroup);
       });
       unitLayer.draw();
-    } else if (!groupDragMode && lastInteractedShape && (lastInteractedShape instanceof Konva.Ellipse || lastInteractedShape instanceof Konva.Rect)) {
-      lastInteractedShape.rotation(lastInteractedShape.rotation() + 5);
-      console.log('Rotated shape by 5 degrees, angle:', lastInteractedShape.rotation());
-      snapToEdge(lastInteractedShape, lastInteractedShape.getParent());
+    } else if (!groupDragMode && activeRotatingShape) {
+      activeRotatingShape.rotation(activeRotatingShape.rotation() + 5);
+      console.log('Mobile shape rotated by 5 degrees, angle:', activeRotatingShape.rotation());
+      snapToEdge(activeRotatingShape, activeRotatingShape.getParent());
       unitLayer.draw();
     }
   });
 
-  // Add unit button click
-  document.getElementById('add-unit').addEventListener('click', () => {
-    const selectedUnit = unitSelect.value;
-    if (selectedUnit) {
-      addUnit(selectedUnit);
+  stage.on('dbltap', e => {
+    if (e.target === stage) {
+      if (activeRotatingGroup) {
+        activeRotatingGroup.opacity(1.0);
+        activeRotatingGroup.draggable(groupDragMode);
+        activeRotatingGroup.getChildren(node => node instanceof Konva.Circle || node instanceof Konva.Ellipse || node instanceof Konva.Rect).forEach(shape => {
+          snapToEdge(shape, activeRotatingGroup);
+        });
+        console.log('Mobile group rotation canceled via stage double-tap:', activeRotatingGroup);
+        activeRotatingGroup = null;
+      }
+      if (activeRotatingShape) {
+        activeRotatingShape.opacity(0.8);
+        activeRotatingShape.draggable(!groupDragMode);
+        snapToEdge(activeRotatingShape, activeRotatingShape.getParent());
+        console.log('Mobile shape rotation canceled via stage double-tap:', activeRotatingShape);
+        activeRotatingShape = null;
+      }
+      unitLayer.draw();
     }
   });
 
   // Toggle drag mode button click
   document.getElementById('toggle-drag-mode').addEventListener('click', () => {
     updateDragMode(!groupDragMode);
+  });
+
+  // Toggle sidebar
+  const sidebar = document.getElementById('sidebar');
+  document.getElementById('toggle-sidebar').addEventListener('click', () => {
+    sidebar.classList.toggle('open');
+  });
+
+  // Handle roster selection
+  rosterList.addEventListener('click', e => {
+    if (e.target.classList.contains('roster-item')) {
+      document.querySelectorAll('.roster-item').forEach(item => item.classList.remove('selected'));
+      e.target.classList.add('selected');
+      selectedUnitName = e.target.dataset.unitName;
+      console.log('Selected roster unit:', selectedUnitName);
+    }
+  });
+
+  // Handle roster drag and drop
+  let draggedUnit = null;
+  rosterList.addEventListener('dragstart', e => {
+    if (e.target.classList.contains('roster-item')) {
+      draggedUnit = e.target.dataset.unitName;
+      e.target.classList.add('dragging');
+      console.log('Dragging roster item:', draggedUnit);
+    }
+  });
+
+  rosterList.addEventListener('dragend', e => {
+    if (e.target.classList.contains('roster-item')) {
+      e.target.classList.remove('dragging');
+      draggedUnit = null;
+    }
+  });
+
+  stage.container().addEventListener('dragover', e => {
+    e.preventDefault();
+  });
+
+  stage.container().addEventListener('drop', e => {
+    e.preventDefault();
+    if (draggedUnit) {
+      const rect = stage.container().getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      console.log('Dropped unit:', draggedUnit, 'at position:', { x, y });
+      addUnit(draggedUnit, x, y);
+      draggedUnit = null;
+    }
+  });
+
+  // Spawn unit button click
+  document.getElementById('spawn-unit').addEventListener('click', () => {
+    if (selectedUnitName) {
+      console.log('Spawning unit from button:', selectedUnitName);
+      addUnit(selectedUnitName);
+    } else {
+      console.warn('No unit selected for spawning');
+    }
   });
 
   // Prevent default context menu on right-click
@@ -459,15 +531,6 @@ terrainImage.onload = function() {
     }
   ];
 
-  // Remove Later
-  console.log('Deployment zones:', deploymentZones.map(zone => ({
-    name: zone.name,
-    lines: zone.lines.map(line => ({
-      points: line.points,
-      stroke: line.stroke
-    }))
-  })));
-
   // Define objective layouts
   const objectiveLayouts = [
     {
@@ -475,7 +538,7 @@ terrainImage.onload = function() {
       objectives: [
         { x: 22, y: 30, radius: 3 },
         { x: 12, y: 12, radius: 3 },
-        { x: 32, y: 12, shape: 'circle', radius: 3 },
+        { x: 32, y: 12, radius: 3 },
         { x: 12, y: 48, radius: 3 },
         { x: 32, y: 48, radius: 3 }
       ]
