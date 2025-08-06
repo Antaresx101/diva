@@ -23,12 +23,11 @@ body {
 }
 
 #container {
-  /* border: 1px solid black; */
   width: 90vw;
   max-height: calc(100vh - 70px);
-  aspect-ratio: 44 / 60; /* 44:60 ratio */
-  flex: 1 0 auto; /* Grow to fill available space, no shrink */
-  overflow: hidden; /* Clip overflow */
+  aspect-ratio: 44 / 60;
+  flex: 1 0 auto;
+  overflow: hidden;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -41,13 +40,13 @@ body {
   gap: 10px;
   padding: 10px;
   height: 60px;
-  overflow-x: auto; /* side-scrolling */
+  overflow-x: auto;
   white-space: nowrap;
-  width: 90vw; /* Match canvas width */
+  width: 90vw;
   flex: 0 0 auto;
 }
 
-#cycle-zones, #cycle-objectives, #add-unit, #toggle-drag-mode {
+#cycle-zones, #cycle-objectives, #toggle-drag-mode, #toggle-sidebar, #spawn-unit {
   padding: 8px 16px;
   font-size: 14px;
   cursor: pointer;
@@ -57,23 +56,78 @@ body {
   border-radius: 5px;
 }
 
-#cycle-zones:hover, #cycle-objectives:hover, #add-unit:hover, #toggle-drag-mode:hover {
+#cycle-zones:hover, #cycle-objectives:hover, #toggle-drag-mode:hover, #toggle-sidebar:hover, #spawn-unit:hover {
   background-color: #45a049;
 }
 
-#unit-controls {
+#sidebar {
+  position: fixed;
+  right: 0;
+  top: 0;
+  height: 100vh;
+  width: 250px;
+  background-color: #333;
+  color: white;
+  transform: translateX(100%);
+  transition: transform 0.3s ease-in-out;
+  z-index: 1000;
   display: flex;
-  flex-direction: row;
-  gap: 10px;
-  align-items: center;
+  flex-direction: column;
 }
 
-#unit-select {
-  padding: 8px;
-  font-size: 14px;
+#sidebar.open {
+  transform: translateX(0);
+}
+
+#toggle-sidebar {
+  position: static;
+  margin-left: 10px;
+}
+
+#roster {
+  padding: 20px;
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+#roster h3 {
+  margin: 0 0 10px 0;
+}
+
+#roster-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  flex: 1;
+}
+
+.roster-item {
+  padding: 10px;
+  margin: 5px 0;
+  background-color: #444;
   border-radius: 5px;
-  border: 1px solid #ccc;
-  height: 36px;
+  cursor: move;
+  user-select: none;
+}
+
+.roster-item:hover {
+  background-color: #555;
+}
+
+.roster-item.selected {
+  background-color: #666;
+  border: 2px solid #4CAF50;
+}
+
+.roster-item.dragging {
+  opacity: 0.5;
+}
+
+#spawn-unit {
+  margin-top: 10px;
+  align-self: stretch;
 }
 
 @media (max-width: 600px) {
@@ -84,12 +138,16 @@ body {
   #controls {
     width: 95vw;
   }
-  #cycle-zones, #cycle-objectives, #add-unit, #toggle-drag-mode, #unit-select {
+  #cycle-zones, #cycle-objectives, #toggle-drag-mode, #toggle-sidebar, #spawn-unit {
     padding: 6px 12px;
     font-size: 12px;
     height: 32px;
   }
-  #unit-select {
-    height: 32px;
+  #sidebar {
+    width: 200px;
+  }
+  #toggle-sidebar {
+    left: -50px;
+    width: 50px;
   }
 }
