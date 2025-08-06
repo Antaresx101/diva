@@ -48,10 +48,10 @@ terrainImage.onload = function() {
 
   // Unit list with roster data
   const units = [
-    { name: 'Captain', shape: 'circle', radius: 1, color: 'purple', modelCount: 1, baseSize: '40mm' },
-    { name: 'Marines', shape: 'circle', radius: 0.65, color: 'blue', modelCount: 10, baseSize: '32mm' },
-    { name: 'Bikers', shape: 'ellipse', radiusX: 1.5, radiusY: 0.85, color: 'green', modelCount: 5, baseSize: '75x42mm' },
-    { name: 'Tank', shape: 'rectangle', width: 5, height: 3, color: 'red', modelCount: 1, baseSize: '60mm' }
+    { name: 'Captain', shape: 'circle', radius: 1, color: 'purple', modelCount: 1, baseSize: '40 mm' },
+    { name: 'Marines', shape: 'circle', radius: 0.65, color: 'blue', modelCount: 10, baseSize: '32 mm' },
+    { name: 'Bikers', shape: 'ellipse', radiusX: 1.5, radiusY: 0.85, color: 'green', modelCount: 5, baseSize: '75x42 mm' },
+    { name: 'Tank', shape: 'rectangle', width: 5, height: 3, color: 'red', modelCount: 1, baseSize: '60 mm' }
   ];
 
   // Populate roster
@@ -59,10 +59,12 @@ terrainImage.onload = function() {
   let selectedUnitName = units[0].name;
   units.forEach(unit => {
     const li = document.createElement('li');
+    const mc = unit.modelCount > 1 ? `${unit.modelCount}x ` : ``;
     li.className = 'roster-item';
     li.draggable = true;
     li.dataset.unitName = unit.name;
-    li.textContent = `${unit.name} (${unit.modelCount} models, ${unit.baseSize})`;
+    li.style.whiteSpace = 'pre-wrap';
+    li.textContent = `${mc}${unit.name}\n(${unit.baseSize})`;
     if (unit.name === selectedUnitName) {
       li.classList.add('selected');
     }
