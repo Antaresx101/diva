@@ -9,6 +9,7 @@
   <meta name="theme-color" content="#1d2521">
   <link rel="icon" href="/diva/icons/icon-192x192.png" type="image/png">
   <link rel="apple-touch-icon" href="/diva/icons/icon-192x192.png">
+  <script src="https://cdn.jsdelivr.net/npm/konva@8.3.5/konva.min.js"></script>
 </head>
 <body>
   <div id="container-wrapper">
@@ -17,15 +18,16 @@
       <button id="cycle-zones">Cycle Deployment Zone</button>
       <button id="cycle-objectives">Cycle Objectives</button>
       <button id="toggle-drag-mode">Move Group</button>
-      <div id="unit-controls">
-        <select id="unit-select">
-          <option value="">Example Unit</option>
-        </select>
-        <button id="add-unit">Add Unit</button>
-      </div>
+      <button id="toggle-sidebar">Toggle Roster</button>
     </div>
-</div>
-  <script src="https://unpkg.com/konva@9.3.6/konva.min.js"></script>
+  </div>
+  <div id="sidebar">
+    <div id="roster">
+      <h3>Unit Roster</h3>
+      <ul id="roster-list"></ul>
+      <button id="spawn-unit">Spawn Unit</button>
+    </div>
+  </div>
   <script src="app.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
