@@ -129,6 +129,38 @@ body {
   align-self: stretch;
 }
 
+#stage-container {
+  width: 100%;
+  height: 100vh;
+}
+
+#deployed-units-list li {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+#deployed-units-list li span {
+  flex-grow: 1;
+}
+
+.delete-btn {
+  margin-left: 10px;
+  background-color: red;
+  color: white;
+  cursor: pointer;
+  padding: 2px 5px;
+  border: none;
+}
+
+.color-btn {
+  margin-left: 10px;
+  width: 20px;
+  height: 20px;
+  border: none;
+  cursor: pointer;
+}
+
 @media (max-width: 600px) {
   #container {
     width: 95vw;
