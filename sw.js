@@ -2,20 +2,20 @@ const APP_PREFIX = 'DIVA_';
 const VERSION = 'version_06'; // Incremented to clear old cache
 const CACHE_NAME = APP_PREFIX + VERSION;
 const URLS = [
-  '/',
-  '/index.html',
-  '/styles.css',
-  '/main.js',
-  '/config.js',
-  '/stageSetup.js',
-  '/unitManagement.js',
-  '/deploymentZones.js',
-  '/objectives.js',
-  '/uiControls.js',
-  '/assets/terrain.png',
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png',
-  '/manifest.json'
+  '/diva/',
+  '/diva/index.html',
+  '/diva/styles.css',
+  '/diva/main.js',
+  '/diva/config.js',
+  '/diva/stageSetup.js',
+  '/diva/unitManagement.js',
+  '/diva/deploymentZones.js',
+  '/diva/objectives.js',
+  '/diva/uiControls.js',
+  '/diva/assets/terrain.png',
+  '/diva/icons/icon-192x192.png',
+  '/diva/icons/icon-512x512.png',
+  '/diva/manifest.json'
 ];
 
 // Cache resources during install
@@ -72,10 +72,10 @@ self.addEventListener('fetch', event => {
           return response;
         }
         if (event.request.mode === 'navigate') {
-          console.log('Falling back to /index.html for navigation');
-          return caches.match('/index.html');
+          console.log('Falling back to /diva/index.html for navigation');
+          return caches.match('/diva/index.html');
         }
-        if (event.request.url.includes('/assets/terrain.png')) {
+        if (event.request.url.includes('/diva/assets/terrain.png')) {
           console.log('Terrain image not found, serving fallback response');
           return new Response('Terrain image unavailable', { status: 404 });
         }
