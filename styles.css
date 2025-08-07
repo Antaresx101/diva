@@ -11,6 +11,7 @@ body {
   align-items: center;
   background-color: #f0f0f0;
   overflow: auto;
+  font-family: Arial, sans-serif;
 }
 
 #container-wrapper {
@@ -24,13 +25,14 @@ body {
 
 #container {
   width: 90vw;
-  max-height: calc(100vh - 70px);
+  max-height: calc(100vh - 80px); /* Adjusted to account for controls below */
   aspect-ratio: 44 / 60;
   flex: 1 0 auto;
   overflow: hidden;
   display: flex;
   justify-content: center;
   align-items: center;
+  background: #f0f0f0;
 }
 
 #controls {
@@ -39,6 +41,7 @@ body {
   align-items: center;
   gap: 10px;
   padding: 10px;
+  margin-top: 10px; /* Added spacing between container and controls */
   height: 60px;
   overflow-x: auto;
   white-space: nowrap;
@@ -57,7 +60,7 @@ body {
 }
 
 #cycle-zones:hover, #cycle-objectives:hover, #toggle-drag-mode:hover, #toggle-sidebar:hover, #spawn-unit:hover {
-  background-color: #162438;
+  background-color: #2e4b75;
 }
 
 #sidebar {
@@ -77,11 +80,6 @@ body {
 
 #sidebar.open {
   transform: translateX(0);
-}
-
-#toggle-sidebar {
-  position: static;
-  margin-left: 10px;
 }
 
 #roster {
@@ -110,6 +108,7 @@ body {
   border-radius: 5px;
   cursor: move;
   user-select: none;
+  white-space: pre-wrap;
 }
 
 .roster-item:hover {
@@ -133,10 +132,11 @@ body {
 @media (max-width: 600px) {
   #container {
     width: 95vw;
-    max-height: calc(100vh - 70px);
+    max-height: calc(100vh - 80px);
   }
   #controls {
     width: 95vw;
+    margin-top: 5px;
   }
   #cycle-zones, #cycle-objectives, #toggle-drag-mode, #toggle-sidebar, #spawn-unit {
     padding: 6px 12px;
