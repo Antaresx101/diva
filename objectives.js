@@ -26,12 +26,20 @@ export function setupObjectives(objectiveLayer, objectiveLayouts, pxPerInchWidth
     console.log('Drawing objective layout:', layout.name);
   }
 
-  function cycleObjectiveLayout() {
-    currentObjectiveIndex = (currentObjectiveIndex + 1) % objectiveLayouts.length;
+  function cycleObjectiveLayout(index = null) {
+    if (index !== null) {
+      currentObjectiveIndex = index % objectiveLayouts.length;
+    } else {
+      currentObjectiveIndex = (currentObjectiveIndex + 1) % objectiveLayouts.length;
+    }
     console.log('Cycling objectives to:', objectiveLayouts[currentObjectiveIndex].name);
     drawObjectiveLayout();
   }
 
+  function getCurrentObjectiveLayoutIndex() {
+    return currentObjectiveIndex;
+  }
+
   drawObjectiveLayout();
-  return { cycleObjectiveLayout };
+  return { cycleObjectiveLayout, getCurrentObjectiveLayoutIndex };
 }

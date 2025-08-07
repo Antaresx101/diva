@@ -20,12 +20,20 @@ export function setupDeploymentZones(zoneLayer, deploymentZones, width, height, 
     console.log('Drawing deployment zone:', zone.name, 'Lines:', zone.lines);
   }
 
-  function cycleDeploymentZone() {
-    currentZoneIndex = (currentZoneIndex + 1) % deploymentZones.length;
+  function cycleDeploymentZone(index = null) {
+    if (index !== null) {
+      currentZoneIndex = index % deploymentZones.length;
+    } else {
+      currentZoneIndex = (currentZoneIndex + 1) % deploymentZones.length;
+    }
     console.log('Cycling deployment zone to:', deploymentZones[currentZoneIndex].name);
     drawDeploymentZone();
   }
 
+  function getCurrentDeploymentZoneIndex() {
+    return currentZoneIndex;
+  }
+
   drawDeploymentZone();
-  return { cycleDeploymentZone };
+  return { cycleDeploymentZone, getCurrentDeploymentZoneIndex };
 }

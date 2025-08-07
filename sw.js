@@ -1,5 +1,5 @@
 const APP_PREFIX = 'DIVA_';
-const VERSION = 'version_06'; // Incremented to clear old cache
+const VERSION = 'version_03';
 const CACHE_NAME = APP_PREFIX + VERSION;
 const URLS = [
   '/diva/',
@@ -23,9 +23,9 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
       console.log('Installing cache: ' + CACHE_NAME);
-      return Promise.all(
-        URLS.map(url => cache.add(url).catch(err => console.error(`Failed to cache ${url}:`, err)))
-      );
+      return cache.addAll(URLS).catch(err => {
+        console.error('Failed to cache resources:', err);
+      });
     })
   );
   self.skipWaiting();

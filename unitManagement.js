@@ -2,30 +2,66 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
   let groupDragMode = true;
   let hoveredGroup = null;
   let hoveredShape = null;
-  let selectedUnitName = units[0].name;
+  let selectedUnitName = units[0]?.name || null;
   let lastSelectedGroup = null;
   let lastSelectedShape = null;
   let unitIdCounter = 0;
   const colors = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'cyan', 'magenta', 'brown', 'gray'];
-  const unitInstances = new Map(); // Map unitName to array of { id, group, deleted } objects
+  const unitInstances = new Map();
 
-  const rosterList = document.getElementById('roster-list');
-  units.forEach(unit => {
-    const li = document.createElement('li');
-    const mc = unit.modelCount > 1 ? `${unit.modelCount}x ` : ``;
-    li.className = 'roster-item';
-    li.draggable = true;
-    li.dataset.unitName = unit.name;
-    li.style.whiteSpace = 'pre-wrap';
-    const nameSpan = document.createElement('span');
-    nameSpan.textContent = `${mc}${unit.name}\n(${unit.baseSize})`;
-    li.appendChild(nameSpan);
-    if (unit.name === selectedUnitName) {
-      li.classList.add('selected');
-    }
-    unitInstances.set(unit.name, []);
-    rosterList.appendChild(li);
-  });
+  function populateRoster() {
+    const rosterList = document.getElementById('roster-list');
+    rosterList.innerHTML = ''; // Clear existing roster
+    units.forEach(unit => {
+      const li = document.createElement('li');
+      const mc = unit.modelCount > 1 ? `${unit.modelCount}x ` : ``;
+      li.className = 'roster-item';
+      li.dataset.unitName = unit.name;
+      li.style.whiteSpace = 'pre-wrap';
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = `${mc}${unit.name}\n(${unit.baseSize})`;
+      li.appendChild(nameSpan);
+      if (unit.name === selectedUnitName) {
+        li.classList.add('selected');
+      }
+
+      // Create instanceDiv with buttons
+      const instanceDiv = document.createElement('div');
+      instanceDiv.dataset.unitId = '';
+      instanceDiv.dataset.deleted = 'true'; // Initially no unit deployed
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.textContent = 'Delete';
+      deleteBtn.className = 'delete-btn';
+      deleteBtn.disabled = true; // Disabled until unit is deployed
+      deleteBtn.style.backgroundColor = 'grey'; // Grey until deployed
+
+      const colorBtn = document.createElement('button');
+      colorBtn.className = 'color-btn';
+      colorBtn.style.backgroundColor = unit.color || colors[0]; // Default to unit color or first color
+      colorBtn.disabled = true; // Disabled until unit deployed
+
+      instanceDiv.appendChild(deleteBtn);
+      instanceDiv.appendChild(colorBtn);
+      li.appendChild(instanceDiv);
+
+      // Check if unit is deployed
+      const isDeployed = unitInstances.has(unit.name) && unitInstances.get(unit.name).some(instance => !instance.deleted);
+      if (isDeployed) {
+        li.classList.add('deployed');
+        li.draggable = false;
+        li.style.cursor = 'default';
+      } else {
+        li.draggable = true;
+        li.style.cursor = 'pointer';
+      }
+
+      unitInstances.set(unit.name, []);
+      rosterList.appendChild(li);
+    });
+  }
+
+  populateRoster();
 
   function getShapeBounds(shape) {
     const rect = shape.getClientRect({ relativeTo: shape.getParent() });
@@ -72,6 +108,13 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
       return;
     }
 
+    // Prevent deploying if unit is already deployed
+    const instances = unitInstances.get(unitName);
+    if (instances.some(instance => !instance.deleted)) {
+      console.warn(`Unit already deployed: ${unitName}`);
+      return;
+    }
+
     const padding = 10;
     const spawnX = (typeof x === 'number' && !isNaN(x)) ? Math.max(padding, Math.min(x, width - padding)) : width / 2;
     const spawnY = (typeof y === 'number' && !isNaN(y)) ? Math.max(padding, Math.min(y, height - padding)) : height / 2;
@@ -85,8 +128,7 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
 
     group.id('unit-' + unitIdCounter);
     unitIdCounter++;
-    group.colorIndex = colors.indexOf(unitData.color);
-    if (group.colorIndex === -1) group.colorIndex = 0;
+    group.colorIndex = colors.indexOf(unitData.color || colors[0]); // Use unitData.color or default to first color
 
     const modelCount = unitData.modelCount;
     const cols = Math.ceil(Math.sqrt(modelCount));
@@ -155,7 +197,7 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
       if (shape) {
         const absPos = {
           x: offsetX - (shape.offsetX() || 0),
-          y: offsetY - (shape.offsetY() || 0)
+          y: offsetY - (shape.offsetX() || 0)
         };
         shapePositions.push(absPos);
 
@@ -303,19 +345,19 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
   }
 
   function addUnitInstanceToRoster(group, unitName) {
-    const rosterItem = Array.from(rosterList.children).find(li => li.dataset.unitName === unitName);
+    const rosterItem = Array.from(document.getElementById('roster-list').children).find(li => li.dataset.unitName === unitName);
     if (!rosterItem) {
       console.warn(`Roster item not found for unit: ${unitName}`);
       return;
     }
 
-    const instanceDiv = document.createElement('div');
+    const instanceDiv = rosterItem.querySelector('div');
     instanceDiv.dataset.unitId = group.id();
     instanceDiv.dataset.deleted = 'false';
 
-    const deleteBtn = document.createElement('button');
-    deleteBtn.textContent = 'Delete';
-    deleteBtn.className = 'delete-btn';
+    const deleteBtn = instanceDiv.querySelector('.delete-btn');
+    deleteBtn.disabled = false;
+    deleteBtn.style.backgroundColor = 'red';
     deleteBtn.addEventListener('click', () => {
       const unitId = instanceDiv.dataset.unitId;
       const groupToRemove = unitLayer.findOne('#' + unitId);
@@ -323,17 +365,20 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
         groupToRemove.destroy();
         unitLayer.draw();
         instanceDiv.dataset.deleted = 'true';
-        deleteBtn.style.backgroundColor = '#ff4500';
+        deleteBtn.style.backgroundColor = 'grey';
+        deleteBtn.disabled = true;
+        const instance = unitInstances.get(unitName).find(i => i.id === unitId);
+        if (instance) instance.deleted = true;
+        rosterItem.classList.remove('deployed');
+        rosterItem.draggable = true;
+        rosterItem.style.cursor = 'pointer';
         console.log(`Deleted unit instance: ${unitId}`);
-      } else if (instanceDiv.dataset.deleted === 'true') {
-        deleteBtn.style.backgroundColor = '#ff4500';
-        console.log(`Unit instance already deleted: ${unitId}`);
       }
     });
 
-    const colorBtn = document.createElement('button');
-    colorBtn.className = 'color-btn';
-    colorBtn.style.backgroundColor = colors[group.colorIndex];
+    const colorBtn = instanceDiv.querySelector('.color-btn');
+    colorBtn.disabled = false;
+    colorBtn.style.backgroundColor = colors[group.colorIndex]; // Reflect unit's initial color
     colorBtn.addEventListener('click', () => {
       const unitId = instanceDiv.dataset.unitId;
       const groupToColor = unitLayer.findOne('#' + unitId);
@@ -347,11 +392,59 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
       }
     });
 
-    instanceDiv.appendChild(deleteBtn);
-    instanceDiv.appendChild(colorBtn);
-    rosterItem.insertBefore(instanceDiv, rosterItem.firstChild);
-
+    rosterItem.classList.add('deployed');
+    rosterItem.draggable = false;
+    rosterItem.style.cursor = 'default';
     unitInstances.get(unitName).push({ id: group.id(), group, deleted: false });
+  }
+
+  function getUnitInstances() {
+    const instances = [];
+    unitInstances.forEach((instanceList, unitName) => {
+      instanceList.forEach(instance => {
+        if (!instance.deleted) {
+          const group = instance.group;
+          instances.push({
+            unitName,
+            x: group.x(),
+            y: group.y(),
+            rotation: group.rotation(),
+            colorIndex: group.colorIndex
+          });
+        }
+      });
+    });
+    return instances;
+  }
+
+  function loadUnitInstances(instances) {
+    unitLayer.removeChildren(); // Clear existing units
+    unitInstances.clear();
+    populateRoster(); // Rebuild roster to reset instance lists
+    instances.forEach(instance => {
+      const unitData = units.find(u => u.name === instance.unitName);
+      if (unitData) {
+        addUnit(instance.unitName, instance.x, instance.y);
+        const group = unitLayer.findOne(`#unit-${unitIdCounter - 1}`);
+        if (group) {
+          group.rotation(instance.rotation);
+          group.colorIndex = instance.colorIndex;
+          group.getChildren().forEach(shape => shape.fill(colors[instance.colorIndex]));
+        }
+      } else {
+        console.warn(`Unit not found for saved instance: ${instance.unitName}`);
+      }
+    });
+    unitLayer.draw();
+  }
+
+  function refreshRoster(newUnits) {
+    units.length = 0;
+    newUnits.forEach(unit => units.push(unit));
+    selectedUnitName = units[0]?.name || null;
+    unitInstances.clear();
+    populateRoster();
+    console.log('Roster refreshed with units:', units);
   }
 
   document.addEventListener('keydown', e => {
@@ -363,7 +456,7 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
           snapToEdge(shape, hoveredGroup);
         });
         unitLayer.draw();
-      } else if (!groupDragMode && hoveredShape && (hoveredShape instanceof Konva.Ellipse || shape instanceof Konva.Rect)) {
+      } else if (!groupDragMode && hoveredShape && (hoveredShape instanceof Konva.Ellipse || hoveredShape instanceof Konva.Rect)) {
         hoveredShape.rotation(hoveredShape.rotation() + 7.5);
         console.log('Key 1: Rotated shape by +7.5 degrees, new angle:', hoveredShape.rotation());
         snapToEdge(hoveredShape, hoveredShape.getParent());
@@ -377,7 +470,7 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
           snapToEdge(shape, hoveredGroup);
         });
         unitLayer.draw();
-      } else if (!groupDragMode && hoveredShape && (hoveredShape instanceof Konva.Ellipse || shape instanceof Konva.Rect)) {
+      } else if (!groupDragMode && hoveredShape && (hoveredShape instanceof Konva.Ellipse || hoveredShape instanceof Konva.Rect)) {
         hoveredShape.rotation(hoveredShape.rotation() - 7.5);
         console.log('Key 2: Rotated shape by -7.5 degrees, new angle:', hoveredShape.rotation());
         snapToEdge(hoveredShape, hoveredShape.getParent());
@@ -423,6 +516,9 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
   return { 
     addUnit, 
     updateDragMode, 
+    refreshRoster,
+    getUnitInstances,
+    loadUnitInstances,
     getSelectedUnitName: () => selectedUnitName, 
     setSelectedUnitName: (name) => { 
       selectedUnitName = name;

@@ -1,9 +1,11 @@
-const units = [
-  { name: 'Captain', shape: 'circle', radius: 1, color: 'purple', modelCount: 1, baseSize: '40 mm' },
-  { name: 'Marines', shape: 'circle', radius: 0.65, color: 'blue', modelCount: 10, baseSize: '32 mm' },
-  { name: 'Bikers', shape: 'ellipse', radiusX: 1.5, radiusY: 0.85, color: 'green', modelCount: 5, baseSize: '75x42 mm' },
-  { name: 'Tank', shape: 'rectangle', width: 5, height: 3, color: 'red', modelCount: 1, baseSize: '60 mm' }
-];
+const units = [];
+
+const baseSizes = {
+  "Lord Discordant on Helstalker": "140x80 mm",
+  "Legionaries": "40 mm",
+  "Helbrute": "100 mm",
+  "Venomcrawler": "120 mm"
+};
 
 const deploymentZones = [
   {
@@ -97,4 +99,4 @@ const objectiveLayouts = [
   }
 ];
 
-export { units, deploymentZones, objectiveLayouts };
+export { units, baseSizes, deploymentZones, objectiveLayouts };

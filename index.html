@@ -9,8 +9,8 @@
   <title>DIVA - Deployment Interface & Visualization App</title>
   <link rel="stylesheet" href="/diva/styles.css">
   <link rel="manifest" href="/diva/manifest.json">
-  <link rel="icon" href="/diva/icons/icon-192x192.png">
-  <link rel="apple-touch-icon" href="/diva/icons/icon-192x192.png">
+  <link rel="icon" href="/icons/icon-192x192.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
   <script src="https://unpkg.com/konva@8.3.2/konva.min.js"></script>
   <script type="module" src="/diva/main.js"></script>
   <script>
@@ -29,6 +29,8 @@
       <button id="toggle-drag-mode">Move Group</button>
       <button id="cycle-zones">Cycle Deployment Zone</button>
       <button id="cycle-objectives">Cycle Objectives</button>
+      <button id="import-list">Import List</button>
+      <button id="save-state">Save State</button>
     </div>
   </div>
   <div id="sidebar">
@@ -36,6 +38,16 @@
       <h3>Unit Roster</h3>
       <ul id="roster-list"></ul>
       <button id="spawn-unit">Spawn Unit</button>
+    </div>
+  </div>
+  <div id="import-popup" style="display: none;">
+    <div id="import-content">
+      <h3>Import Unit List</h3>
+      <textarea id="unit-list-input" rows="10" cols="50" placeholder="Paste unit list here..."></textarea>
+      <div>
+        <button id="confirm-import">Confirm</button>
+        <button id="cancel-import">Cancel</button>
+      </div>
     </div>
   </div>
 </body>
