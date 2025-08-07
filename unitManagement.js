@@ -7,6 +7,7 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
   let lastSelectedShape = null;
   let unitIdCounter = 0;
   const colors = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'cyan', 'magenta', 'brown', 'gray'];
+  const unitInstances = new Map(); // Map unitName to array of { id, group, deleted } objects
 
   const rosterList = document.getElementById('roster-list');
   units.forEach(unit => {
@@ -16,10 +17,13 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
     li.draggable = true;
     li.dataset.unitName = unit.name;
     li.style.whiteSpace = 'pre-wrap';
-    li.textContent = `${mc}${unit.name}\n(${unit.baseSize})`;
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = `${mc}${unit.name}\n(${unit.baseSize})`;
+    li.appendChild(nameSpan);
     if (unit.name === selectedUnitName) {
       li.classList.add('selected');
     }
+    unitInstances.set(unit.name, []);
     rosterList.appendChild(li);
   });
 
@@ -291,30 +295,39 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
 
     unitLayer.add(group);
     unitLayer.draw();
-    createDeployedUnitEntry(group, unitName);
+    addUnitInstanceToRoster(group, unitName);
     if (groupDragMode) {
       lastSelectedGroup = group;
       console.log('New unit added, selected group for rotation:', lastSelectedGroup);
     }
   }
 
-  function createDeployedUnitEntry(group, unitName) {
-    const li = document.createElement('li');
-    const span = document.createElement('span');
-    span.textContent = unitName;
-    li.appendChild(span);
-    li.dataset.unitId = group.id();
+  function addUnitInstanceToRoster(group, unitName) {
+    const rosterItem = Array.from(rosterList.children).find(li => li.dataset.unitName === unitName);
+    if (!rosterItem) {
+      console.warn(`Roster item not found for unit: ${unitName}`);
+      return;
+    }
+
+    const instanceDiv = document.createElement('div');
+    instanceDiv.dataset.unitId = group.id();
+    instanceDiv.dataset.deleted = 'false';
 
     const deleteBtn = document.createElement('button');
     deleteBtn.textContent = 'Delete';
     deleteBtn.className = 'delete-btn';
     deleteBtn.addEventListener('click', () => {
-      const unitId = li.dataset.unitId;
+      const unitId = instanceDiv.dataset.unitId;
       const groupToRemove = unitLayer.findOne('#' + unitId);
       if (groupToRemove) {
         groupToRemove.destroy();
         unitLayer.draw();
-        li.remove();
+        instanceDiv.dataset.deleted = 'true';
+        deleteBtn.style.backgroundColor = '#ff4500';
+        console.log(`Deleted unit instance: ${unitId}`);
+      } else if (instanceDiv.dataset.deleted === 'true') {
+        deleteBtn.style.backgroundColor = '#ff4500';
+        console.log(`Unit instance already deleted: ${unitId}`);
       }
     });
 
@@ -322,7 +335,7 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
     colorBtn.className = 'color-btn';
     colorBtn.style.backgroundColor = colors[group.colorIndex];
     colorBtn.addEventListener('click', () => {
-      const unitId = li.dataset.unitId;
+      const unitId = instanceDiv.dataset.unitId;
       const groupToColor = unitLayer.findOne('#' + unitId);
       if (groupToColor) {
         groupToColor.colorIndex = (groupToColor.colorIndex + 1) % colors.length;
@@ -330,12 +343,15 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
         groupToColor.getChildren().forEach(shape => shape.fill(newColor));
         unitLayer.draw();
         colorBtn.style.backgroundColor = newColor;
+        console.log(`Changed color for unit ${unitId} to: ${newColor}`);
       }
     });
 
-    li.appendChild(deleteBtn);
-    li.appendChild(colorBtn);
-    document.getElementById('deployed-units-list').appendChild(li);
+    instanceDiv.appendChild(deleteBtn);
+    instanceDiv.appendChild(colorBtn);
+    rosterItem.insertBefore(instanceDiv, rosterItem.firstChild);
+
+    unitInstances.get(unitName).push({ id: group.id(), group, deleted: false });
   }
 
   document.addEventListener('keydown', e => {
@@ -347,7 +363,7 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
           snapToEdge(shape, hoveredGroup);
         });
         unitLayer.draw();
-      } else if (!groupDragMode && hoveredShape && (hoveredShape instanceof Konva.Ellipse || hoveredShape instanceof Konva.Rect)) {
+      } else if (!groupDragMode && hoveredShape && (hoveredShape instanceof Konva.Ellipse || shape instanceof Konva.Rect)) {
         hoveredShape.rotation(hoveredShape.rotation() + 7.5);
         console.log('Key 1: Rotated shape by +7.5 degrees, new angle:', hoveredShape.rotation());
         snapToEdge(hoveredShape, hoveredShape.getParent());
@@ -361,7 +377,7 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
           snapToEdge(shape, hoveredGroup);
         });
         unitLayer.draw();
-      } else if (!groupDragMode && hoveredShape && (hoveredShape instanceof Konva.Ellipse || hoveredShape instanceof Konva.Rect)) {
+      } else if (!groupDragMode && hoveredShape && (hoveredShape instanceof Konva.Ellipse || shape instanceof Konva.Rect)) {
         hoveredShape.rotation(hoveredShape.rotation() - 7.5);
         console.log('Key 2: Rotated shape by -7.5 degrees, new angle:', hoveredShape.rotation());
         snapToEdge(hoveredShape, hoveredShape.getParent());
