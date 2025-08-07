@@ -5,6 +5,8 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
   let selectedUnitName = units[0].name;
   let lastSelectedGroup = null;
   let lastSelectedShape = null;
+  let unitIdCounter = 0;
+  const colors = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'cyan', 'magenta', 'brown', 'gray'];
 
   const rosterList = document.getElementById('roster-list');
   units.forEach(unit => {
@@ -77,6 +79,11 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
       rotation: 0
     });
 
+    group.id('unit-' + unitIdCounter);
+    unitIdCounter++;
+    group.colorIndex = colors.indexOf(unitData.color);
+    if (group.colorIndex === -1) group.colorIndex = 0;
+
     const modelCount = unitData.modelCount;
     const cols = Math.ceil(Math.sqrt(modelCount));
     const spacing = 0.1;
@@ -99,7 +106,7 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
             x: offsetX,
             y: offsetY,
             radius: unitData.radius * pxPerInchWidth,
-            fill: unitData.color,
+            fill: colors[group.colorIndex],
             fillEnabled: true,
             stroke: 'black',
             strokeWidth: 2,
@@ -113,7 +120,7 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
             y: offsetY,
             radiusX: unitData.radiusX * pxPerInchWidth,
             radiusY: unitData.radiusY * pxPerInchHeight,
-            fill: unitData.color,
+            fill: colors[group.colorIndex],
             fillEnabled: true,
             stroke: 'black',
             strokeWidth: 2,
@@ -130,7 +137,7 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
             height: unitData.height * pxPerInchHeight,
             offsetX: (unitData.width * pxPerInchWidth) / 2,
             offsetY: (unitData.height * pxPerInchHeight) / 2,
-            fill: unitData.color,
+            fill: colors[group.colorIndex],
             fillEnabled: true,
             stroke: 'black',
             strokeWidth: 2,
@@ -284,11 +291,51 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
 
     unitLayer.add(group);
     unitLayer.draw();
-    // Set the newly created group as the last selected if in groupDragMode
+    createDeployedUnitEntry(group, unitName);
     if (groupDragMode) {
       lastSelectedGroup = group;
       console.log('New unit added, selected group for rotation:', lastSelectedGroup);
     }
+  }
+
+  function createDeployedUnitEntry(group, unitName) {
+    const li = document.createElement('li');
+    const span = document.createElement('span');
+    span.textContent = unitName;
+    li.appendChild(span);
+    li.dataset.unitId = group.id();
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.textContent = 'Delete';
+    deleteBtn.className = 'delete-btn';
+    deleteBtn.addEventListener('click', () => {
+      const unitId = li.dataset.unitId;
+      const groupToRemove = unitLayer.findOne('#' + unitId);
+      if (groupToRemove) {
+        groupToRemove.destroy();
+        unitLayer.draw();
+        li.remove();
+      }
+    });
+
+    const colorBtn = document.createElement('button');
+    colorBtn.className = 'color-btn';
+    colorBtn.style.backgroundColor = colors[group.colorIndex];
+    colorBtn.addEventListener('click', () => {
+      const unitId = li.dataset.unitId;
+      const groupToColor = unitLayer.findOne('#' + unitId);
+      if (groupToColor) {
+        groupToColor.colorIndex = (groupToColor.colorIndex + 1) % colors.length;
+        const newColor = colors[groupToColor.colorIndex];
+        groupToColor.getChildren().forEach(shape => shape.fill(newColor));
+        unitLayer.draw();
+        colorBtn.style.backgroundColor = newColor;
+      }
+    });
+
+    li.appendChild(deleteBtn);
+    li.appendChild(colorBtn);
+    document.getElementById('deployed-units-list').appendChild(li);
   }
 
   document.addEventListener('keydown', e => {
