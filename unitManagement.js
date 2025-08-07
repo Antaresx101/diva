@@ -3,6 +3,8 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
   let hoveredGroup = null;
   let hoveredShape = null;
   let selectedUnitName = units[0].name;
+  let lastSelectedGroup = null;
+  let lastSelectedShape = null;
 
   const rosterList = document.getElementById('roster-list');
   units.forEach(unit => {
@@ -65,7 +67,6 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
     }
 
     const padding = 10;
-    // Validate provided coordinates, default to center if invalid
     const spawnX = (typeof x === 'number' && !isNaN(x)) ? Math.max(padding, Math.min(x, width - padding)) : width / 2;
     const spawnY = (typeof y === 'number' && !isNaN(y)) ? Math.max(padding, Math.min(y, height - padding)) : height / 2;
 
@@ -150,8 +151,13 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
         shape.on('dragstart', () => {
           console.log('Dragging model:', shape);
           shape.opacity(0.5);
+          if (!groupDragMode) {
+            lastSelectedShape = shape;
+            console.log('Selected shape for rotation:', lastSelectedShape);
+          }
           unitLayer.draw();
         });
+
         shape.on('dragend', () => {
           console.log('Model drag ended:', shape);
           shape.opacity(0.8);
@@ -177,6 +183,23 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
           if (groupDragMode && e.evt.button === 0) {
             console.log('Left-click on shape in Group Drag Mode, dragging group:', group);
             group.startDrag();
+          }
+        });
+
+        shape.on('tap', () => {
+          if (!groupDragMode && (shape instanceof Konva.Ellipse || shape instanceof Konva.Rect)) {
+            lastSelectedShape = shape;
+            console.log('Tapped shape, selected for rotation:', lastSelectedShape);
+          }
+        });
+
+        shape.on('touchstart', e => {
+          if (groupDragMode && e.evt.touches.length === 1) {
+            console.log('Single touch on shape in Group Drag Mode, dragging group:', group);
+            group.startDrag();
+          } else if (!groupDragMode && (shape instanceof Konva.Ellipse || shape instanceof Konva.Rect)) {
+            lastSelectedShape = shape;
+            console.log('Touchstart on shape, selected for rotation:', lastSelectedShape);
           }
         });
 
@@ -229,13 +252,26 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
       if (groupDragMode && e.evt.touches.length === 1) {
         console.log('Single touch on group, starting drag:', group);
         group.draggable(true);
+        lastSelectedGroup = group;
+        console.log('Touchstart on group, selected for rotation:', lastSelectedGroup);
         group.startDrag();
+      }
+    });
+
+    group.on('tap', () => {
+      if (groupDragMode) {
+        lastSelectedGroup = group;
+        console.log('Tapped group, selected for rotation:', lastSelectedGroup);
       }
     });
 
     group.on('dragstart', () => {
       console.log('Dragging group:', group);
       group.opacity(0.6);
+      if (groupDragMode) {
+        lastSelectedGroup = group;
+        console.log('Selected group for rotation:', lastSelectedGroup);
+      }
       unitLayer.draw();
     });
 
@@ -248,6 +284,11 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
 
     unitLayer.add(group);
     unitLayer.draw();
+    // Set the newly created group as the last selected if in groupDragMode
+    if (groupDragMode) {
+      lastSelectedGroup = group;
+      console.log('New unit added, selected group for rotation:', lastSelectedGroup);
+    }
   }
 
   document.addEventListener('keydown', e => {
@@ -282,35 +323,22 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
     }
   });
 
-  stage.on('tap', e => {
+  stage.on('tap', () => {
     console.log('Stage tap detected, groupDragMode:', groupDragMode);
-    const touch = e.evt.changedTouches ? e.evt.changedTouches[0] : e.evt;
-    const rect = stage.container().getBoundingClientRect();
-    const tapY = touch.clientY - rect.top;
-    const canvasHeight = rect.height;
-    const isUpperHalf = tapY < canvasHeight / 2;
-    const rotationAngle = isUpperHalf ? 7.5 : -7.5;
-
-    const pos = { x: touch.clientX - rect.left, y: tapY };
-    const target = stage.getIntersection(pos);
-
-    if (target) {
-      if (groupDragMode) {
-        const group = target.getParent() instanceof Konva.Group ? target.getParent() : null;
-        if (group) {
-          group.rotation(group.rotation() + rotationAngle);
-          console.log(`Mobile tap (${isUpperHalf ? 'upper' : 'lower'} half): Rotated group by ${rotationAngle} degrees, new angle:`, group.rotation());
-          group.getChildren(node => node instanceof Konva.Circle || node instanceof Konva.Ellipse || node instanceof Konva.Rect).forEach(shape => {
-            snapToEdge(shape, group);
-          });
-          unitLayer.draw();
-        }
-      } else if (target instanceof Konva.Ellipse || target instanceof Konva.Rect) {
-        target.rotation(target.rotation() + rotationAngle);
-        console.log(`Mobile tap (${isUpperHalf ? 'upper' : 'lower'} half): Rotated shape by ${rotationAngle} degrees, new angle:`, target.rotation());
-        snapToEdge(target, target.getParent());
-        unitLayer.draw();
-      }
+    if (groupDragMode && lastSelectedGroup) {
+      lastSelectedGroup.rotation(lastSelectedGroup.rotation() + 7.5);
+      console.log('Mobile tap: Rotated last selected group by +7.5 degrees, new angle:', lastSelectedGroup.rotation());
+      lastSelectedGroup.getChildren(node => node instanceof Konva.Circle || node instanceof Konva.Ellipse || node instanceof Konva.Rect).forEach(shape => {
+        snapToEdge(shape, lastSelectedGroup);
+      });
+      unitLayer.draw();
+    } else if (!groupDragMode && lastSelectedShape && (lastSelectedShape instanceof Konva.Ellipse || lastSelectedShape instanceof Konva.Rect)) {
+      lastSelectedShape.rotation(lastSelectedShape.rotation() + 7.5);
+      console.log('Mobile tap: Rotated last selected shape by +7.5 degrees, new angle:', lastSelectedShape.rotation());
+      snapToEdge(lastSelectedShape, lastSelectedShape.getParent());
+      unitLayer.draw();
+    } else {
+      console.log('Mobile tap: No valid group or shape selected for rotation');
     }
   });
 
