@@ -1,5 +1,5 @@
 const APP_PREFIX = 'DIVA_';
-const VERSION = 'version_05'; // Incremented to clear old caches
+const VERSION = 'version_06'; // Incremented to clear old cache
 const CACHE_NAME = APP_PREFIX + VERSION;
 const URLS = [
   '/',
