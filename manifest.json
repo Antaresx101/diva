@@ -2,24 +2,23 @@
   "name": "DIVA - Deployment Interface & Visualization App",
   "short_name": "DIVA",
   "description": "A tabletop simulator for unit deployment and visualization",
-  "start_url": "/index.html",
-  "scope": "/",
+  "start_url": "/diva/index.html",
+  "scope": "/diva/",
   "display": "standalone",
   "background_color": "#1d2521",
   "theme_color": "#1d2521",
   "icons": [
     {
-      "src": "/icons/icon-192x192.png",
+      "src": "/diva/icons/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-512x512.png",
+      "src": "/diva/icons/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
     }
   ]
 }
-
