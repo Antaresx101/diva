@@ -3,7 +3,7 @@
   "short_name": "DIVA",
   "description": "A tabletop simulator for unit deployment and visualization",
   "start_url": "/index.html",
-  "scope": "/diva/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#1d2521",
   "theme_color": "#1d2521",
@@ -22,3 +22,4 @@
     }
   ]
 }
+
