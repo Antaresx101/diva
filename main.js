@@ -125,4 +125,5 @@ terrainImage.onerror = function() {
   terrainLayer.draw();
   unitLayer.draw();
 };
-terrainImage.src = '/assets/terrain.png';
+
+terrainImage.src = '/diva/assets/terrain.png';
