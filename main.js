@@ -22,8 +22,6 @@ terrainImage.onload = function() {
     const state = {
       units: units.map(unit => ({ ...unit })), // Deep copy units
       unitInstances: unitManagement.getUnitInstances(),
-      deploymentZoneIndex: getCurrentDeploymentZoneIndex(),
-      objectiveLayoutIndex: getCurrentObjectiveLayoutIndex()
     };
     localStorage.setItem('diva_state', JSON.stringify(state));
     console.log('State saved:', state);
@@ -39,8 +37,6 @@ terrainImage.onload = function() {
         state.units.forEach(unit => units.push(unit));
         unitManagement.refreshRoster(state.units);
         unitManagement.loadUnitInstances(state.unitInstances);
-        cycleDeploymentZone(state.deploymentZoneIndex); // Restore deployment zone
-        cycleObjectiveLayout(state.objectiveLayoutIndex); // Restore objectives
         console.log('State loaded:', state);
         terrainLayer.draw();
         zoneLayer.draw();
@@ -52,6 +48,17 @@ terrainImage.onload = function() {
     }
   }
 
+  // Clear roster and save empty state
+  function clearRoster() {
+    units.length = 0; // Clear the units array
+    unitManagement.refreshRoster([]); // Refresh roster with empty array
+    unitLayer.removeChildren(); // Clear all units from the canvas
+    unitLayer.draw();
+    localStorage.setItem('diva_state', JSON.stringify({ units: [], unitInstances: [] })); // Save empty state
+    console.log('Roster cleared and empty state saved');
+    alert('Roster cleared successfully!');
+  }
+
   // Initialize with saved state
   loadState();
 
@@ -59,6 +66,11 @@ terrainImage.onload = function() {
   document.getElementById('save-state').addEventListener('click', () => {
     saveState();
     alert('State saved successfully!');
+  });
+
+  // Clear roster on button click
+  document.getElementById('clear-roster').addEventListener('click', () => {
+    clearRoster();
   });
 
   console.log('Drawing layers:', { width, height, centerX, centerY });
@@ -82,8 +94,6 @@ terrainImage.onerror = function() {
     const state = {
       units: units.map(unit => ({ ...unit })), // Deep copy units
       unitInstances: unitManagement.getUnitInstances(),
-      deploymentZoneIndex: getCurrentDeploymentZoneIndex(),
-      objectiveLayoutIndex: getCurrentObjectiveLayoutIndex()
     };
     localStorage.setItem('diva_state', JSON.stringify(state));
     console.log('State saved:', state);
@@ -99,8 +109,6 @@ terrainImage.onerror = function() {
         state.units.forEach(unit => units.push(unit));
         unitManagement.refreshRoster(state.units);
         unitManagement.loadUnitInstances(state.unitInstances);
-        cycleDeploymentZone(state.deploymentZoneIndex); // Restore deployment zone
-        cycleObjectiveLayout(state.objectiveLayoutIndex); // Restore objectives
         console.log('State loaded:', state);
         terrainLayer.draw();
         zoneLayer.draw();
@@ -112,6 +120,17 @@ terrainImage.onerror = function() {
     }
   }
 
+  // Clear roster and save empty state
+  function clearRoster() {
+    units.length = 0; // Clear the units array
+    unitManagement.refreshRoster([]); // Refresh roster with empty array
+    unitLayer.removeChildren(); // Clear all units from the canvas
+    unitLayer.draw();
+    localStorage.setItem('diva_state', JSON.stringify({ units: [], unitInstances: [] })); // Save empty state
+    console.log('Roster cleared and empty state saved');
+    alert('Roster cleared successfully!');
+  }
+
   // Initialize with saved state
   loadState();
 
@@ -121,9 +140,13 @@ terrainImage.onerror = function() {
     alert('State saved successfully!');
   });
 
+  // Clear roster on button click
+  document.getElementById('clear-roster').addEventListener('click', () => {
+    clearRoster();
+  });
+
   console.log('Drawing layers without terrain:', { width, height, centerX, centerY });
   terrainLayer.draw();
   unitLayer.draw();
 };
-
 terrainImage.src = '/diva/assets/terrain.png';

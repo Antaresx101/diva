@@ -30,19 +30,34 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
       instanceDiv.dataset.unitId = '';
       instanceDiv.dataset.deleted = 'true'; // Initially no unit deployed
 
+      const colorBtn = document.createElement('button');
+      colorBtn.className = 'color-btn';
+      colorBtn.style.backgroundColor = unit.color || colors[0]; // Default to unit color or first color
+      colorBtn.addEventListener('click', () => {
+        const unitId = instanceDiv.dataset.unitId;
+        const groupToColor = unitLayer.findOne('#' + unitId);
+        const currentColorIndex = colors.indexOf(colorBtn.style.backgroundColor) !== -1 ? colors.indexOf(colorBtn.style.backgroundColor) : 0;
+        const newColorIndex = (currentColorIndex + 1) % colors.length;
+        const newColor = colors[newColorIndex];
+        colorBtn.style.backgroundColor = newColor;
+        if (groupToColor) {
+          groupToColor.colorIndex = newColorIndex;
+          groupToColor.getChildren().forEach(shape => shape.fill(newColor));
+          unitLayer.draw();
+          console.log(`Changed color for unit ${unitId} to: ${newColor}`);
+        } else {
+          console.log(`Color changed to ${newColor} for unit ${unit.name} (not deployed)`);
+        }
+      });
+
       const deleteBtn = document.createElement('button');
       deleteBtn.textContent = 'Delete';
       deleteBtn.className = 'delete-btn';
       deleteBtn.disabled = true; // Disabled until unit is deployed
-      deleteBtn.style.backgroundColor = 'grey'; // Grey until deployed
+      deleteBtn.style.backgroundColor = 'transparent';
 
-      const colorBtn = document.createElement('button');
-      colorBtn.className = 'color-btn';
-      colorBtn.style.backgroundColor = unit.color || colors[0]; // Default to unit color or first color
-      colorBtn.disabled = true; // Disabled until unit deployed
-
-      instanceDiv.appendChild(deleteBtn);
       instanceDiv.appendChild(colorBtn);
+      instanceDiv.appendChild(deleteBtn);
       li.appendChild(instanceDiv);
 
       // Check if unit is deployed
@@ -102,7 +117,7 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
   }
 
   function addUnit(unitName, x = width / 2, y = height / 2) {
-    const unitData = units.find(u => u.name === unitName);
+    const unitData = units.find(u => u.name.trim() === unitName.trim());
     if (!unitData) {
       console.warn(`Unit not found: ${unitName}`);
       return;
@@ -128,7 +143,12 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
 
     group.id('unit-' + unitIdCounter);
     unitIdCounter++;
-    group.colorIndex = colors.indexOf(unitData.color || colors[0]); // Use unitData.color or default to first color
+
+    // Get the selected color from the roster's color button
+    const rosterItem = Array.from(document.getElementById('roster-list').children).find(li => li.dataset.unitName === unitName);
+    const colorBtn = rosterItem?.querySelector('.color-btn');
+    const selectedColor = colorBtn?.style.backgroundColor || colors[0]; // Fallback to first color if not found
+    group.colorIndex = colors.indexOf(selectedColor) !== -1 ? colors.indexOf(selectedColor) : colors.indexOf(unitData.color || colors[0]);
 
     const modelCount = unitData.modelCount;
     const cols = Math.ceil(Math.sqrt(modelCount));
@@ -152,7 +172,7 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
             x: offsetX,
             y: offsetY,
             radius: unitData.radius * pxPerInchWidth,
-            fill: colors[group.colorIndex],
+            fill: colors[group.colorIndex], // Use the selected color
             fillEnabled: true,
             stroke: 'black',
             strokeWidth: 2,
@@ -166,7 +186,7 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
             y: offsetY,
             radiusX: unitData.radiusX * pxPerInchWidth,
             radiusY: unitData.radiusY * pxPerInchHeight,
-            fill: colors[group.colorIndex],
+            fill: colors[group.colorIndex], // Use the selected color
             fillEnabled: true,
             stroke: 'black',
             strokeWidth: 2,
@@ -183,7 +203,7 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
             height: unitData.height * pxPerInchHeight,
             offsetX: (unitData.width * pxPerInchWidth) / 2,
             offsetY: (unitData.height * pxPerInchHeight) / 2,
-            fill: colors[group.colorIndex],
+            fill: colors[group.colorIndex], // Use the selected color
             fillEnabled: true,
             stroke: 'black',
             strokeWidth: 2,
@@ -358,6 +378,7 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
     const deleteBtn = instanceDiv.querySelector('.delete-btn');
     deleteBtn.disabled = false;
     deleteBtn.style.backgroundColor = 'red';
+    deleteBtn.style.color = 'white';
     deleteBtn.addEventListener('click', () => {
       const unitId = instanceDiv.dataset.unitId;
       const groupToRemove = unitLayer.findOne('#' + unitId);
@@ -365,7 +386,8 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
         groupToRemove.destroy();
         unitLayer.draw();
         instanceDiv.dataset.deleted = 'true';
-        deleteBtn.style.backgroundColor = 'grey';
+        deleteBtn.style.backgroundColor = 'transparent';
+        deleteBtn.style.color = 'transparent';
         deleteBtn.disabled = true;
         const instance = unitInstances.get(unitName).find(i => i.id === unitId);
         if (instance) instance.deleted = true;
@@ -377,20 +399,7 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
     });
 
     const colorBtn = instanceDiv.querySelector('.color-btn');
-    colorBtn.disabled = false;
     colorBtn.style.backgroundColor = colors[group.colorIndex]; // Reflect unit's initial color
-    colorBtn.addEventListener('click', () => {
-      const unitId = instanceDiv.dataset.unitId;
-      const groupToColor = unitLayer.findOne('#' + unitId);
-      if (groupToColor) {
-        groupToColor.colorIndex = (groupToColor.colorIndex + 1) % colors.length;
-        const newColor = colors[groupToColor.colorIndex];
-        groupToColor.getChildren().forEach(shape => shape.fill(newColor));
-        unitLayer.draw();
-        colorBtn.style.backgroundColor = newColor;
-        console.log(`Changed color for unit ${unitId} to: ${newColor}`);
-      }
-    });
 
     rosterItem.classList.add('deployed');
     rosterItem.draggable = false;
@@ -404,12 +413,17 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
       instanceList.forEach(instance => {
         if (!instance.deleted) {
           const group = instance.group;
+          const shapes = group.getChildren(node => node instanceof Konva.Circle || node instanceof Konva.Ellipse || node instanceof Konva.Rect).map((shape, index) => ({
+            index,
+            rotation: shape.rotation()
+          }));
           instances.push({
             unitName,
             x: group.x(),
             y: group.y(),
             rotation: group.rotation(),
-            colorIndex: group.colorIndex
+            colorIndex: group.colorIndex,
+            shapes // Include individual shape rotations
           });
         }
       });
@@ -430,6 +444,16 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
           group.rotation(instance.rotation);
           group.colorIndex = instance.colorIndex;
           group.getChildren().forEach(shape => shape.fill(colors[instance.colorIndex]));
+          // Restore individual shape rotations
+          if (instance.shapes) {
+            group.getChildren(node => node instanceof Konva.Circle || node instanceof Konva.Ellipse || node instanceof Konva.Rect).forEach((shape, index) => {
+              const savedShape = instance.shapes.find(s => s.index === index);
+              if (savedShape) {
+                shape.rotation(savedShape.rotation);
+                console.log(`Restored rotation ${savedShape.rotation} for shape ${index} in unit ${instance.unitName}`);
+              }
+            });
+          }
         }
       } else {
         console.warn(`Unit not found for saved instance: ${instance.unitName}`);
@@ -510,7 +534,7 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
       });
     });
     unitLayer.draw();
-    document.getElementById('toggle-drag-mode').textContent = groupDragMode ? 'Move Group' : 'Move Models';
+    document.getElementById('toggle-drag-mode').textContent = isGroupMode ? 'Move Group' : 'Move Models';
   }
 
   return { 

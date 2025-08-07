@@ -49,7 +49,7 @@ body {
   flex: 0 0 auto;
 }
 
-#cycle-zones, #cycle-objectives, #toggle-drag-mode, #toggle-sidebar, #spawn-unit, #import-list, #save-state {
+#cycle-zones, #cycle-objectives, #toggle-drag-mode, #toggle-sidebar, #spawn-unit, #import-list, #save-state, #clear-roster {
   padding: 8px 16px;
   font-size: 14px;
   cursor: pointer;
@@ -139,16 +139,6 @@ body {
   flex-grow: 1;
 }
 
-.delete-btn {
-  margin-right: 5px;
-  background-color: rgb(143, 99, 71);
-  color: white;
-  padding: 2px 5px;
-  border: none;
-  border-radius: 15%;
-  cursor: pointer;
-}
-
 .color-btn {
   margin-right: 5px;
   width: 20px;
@@ -156,6 +146,19 @@ body {
   border: none;
   border-radius: 50%;
   cursor: pointer;
+  margin-top: 5px;
+  margin-left: 5px;
+}
+
+.delete-btn {
+  margin-right: 5px;
+  color: rgba(255, 255, 255, 0);
+  padding: 1.5px 5px;
+  border: none;
+  border-radius: 10%;
+  margin-top: 5px;
+  cursor: pointer;
+  margin-left: 10px;
 }
 
 #import-popup {

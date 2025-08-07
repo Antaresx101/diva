@@ -1,12 +1,5 @@
 const units = [];
 
-const baseSizes = {
-  "Lord Discordant on Helstalker": "140x80 mm",
-  "Legionaries": "40 mm",
-  "Helbrute": "100 mm",
-  "Venomcrawler": "120 mm"
-};
-
 const deploymentZones = [
   {
     name: 'DZ 1',
@@ -99,4 +92,17 @@ const objectiveLayouts = [
   }
 ];
 
-export { units, baseSizes, deploymentZones, objectiveLayouts };
+// Load baseSizes as a promise
+const baseSizesPromise = fetch('./baseSizes.json')
+  .then(response => {
+    if (!response.ok) {
+      throw new Error(`Failed to load baseSizes.json: ${response.statusText}`);
+    }
+    return response.json();
+  })
+  .catch(error => {
+    console.error('Error loading baseSizes.json:', error);
+    return {}; // Fallback to empty object
+  });
+
+export { units, baseSizesPromise as baseSizes, deploymentZones, objectiveLayouts };

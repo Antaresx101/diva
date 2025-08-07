@@ -5,6 +5,12 @@ export function setupUIControls(stage, unitManagement, width, height) {
   const rosterList = document.getElementById('roster-list');
   let draggedUnit = null;
 
+  // Create Clear Roster button
+  const clearRosterButton = document.createElement('button');
+  clearRosterButton.id = 'clear-roster';
+  clearRosterButton.textContent = 'Clear Roster';
+  document.getElementById('controls').appendChild(clearRosterButton);
+
   document.getElementById('toggle-sidebar').addEventListener('click', () => {
     sidebar.classList.toggle('open');
   });
@@ -80,10 +86,10 @@ export function setupUIControls(stage, unitManagement, width, height) {
     document.getElementById('unit-list-input').value = '';
   });
 
-  document.getElementById('confirm-import').addEventListener('click', () => {
+  document.getElementById('confirm-import').addEventListener('click', async () => {
     const input = document.getElementById('unit-list-input').value.trim();
     if (input) {
-      const newUnits = parseUnitList(input);
+      const newUnits = await parseUnitList(input);
       updateUnits(newUnits);
       unitManagement.refreshRoster(newUnits);
       document.getElementById('import-popup').style.display = 'none';
@@ -96,29 +102,106 @@ export function setupUIControls(stage, unitManagement, width, height) {
 
   stage.container().addEventListener('contextmenu', e => e.preventDefault());
 
-  function parseUnitList(input) {
+  // Levenshtein distance function to calculate string similarity
+  function levenshteinDistance(a, b) {
+    const matrix = Array(b.length + 1).fill().map(() => Array(a.length + 1).fill(0));
+    
+    for (let i = 0; i <= a.length; i++) {
+      matrix[0][i] = i;
+    }
+    for (let j = 0; j <= b.length; j++) {
+      matrix[j][0] = j;
+    }
+    
+    for (let j = 1; j <= b.length; j++) {
+      for (let i = 1; i <= a.length; i++) {
+        const indicator = a[i - 1] === b[j - 1] ? 0 : 1;
+        matrix[j][i] = Math.min(
+          matrix[j][i - 1] + 1, // Deletion
+          matrix[j - 1][i] + 1, // Insertion
+          matrix[j - 1][i - 1] + indicator // Substitution
+        );
+      }
+    }
+    
+    return matrix[b.length][a.length];
+  }
+
+  // Calculate similarity score (0-100) based on Levenshtein distance
+  function similarityScore(a, b) {
+    const maxLength = Math.max(a.length, b.length);
+    if (maxLength === 0) return 100; // Both empty strings
+    const distance = levenshteinDistance(a.toLowerCase(), b.toLowerCase());
+    return Math.round((1 - distance / maxLength) * 100);
+  }
+
+  async function parseUnitList(input) {
     const lines = input.split('\n').map(line => line.trim()).filter(line => line);
     const newUnits = [];
     const colors = ['purple', 'blue', 'green', 'red', 'yellow', 'orange', 'cyan', 'magenta', 'brown', 'gray'];
     let colorIndex = 0;
+
+    // Wait for baseSizes to load
+    const baseSizesData = await baseSizes;
+    console.log('baseSizes loaded for parsing:', baseSizesData);
 
     lines.forEach(line => {
       // Match unit name and optional model count (e.g., "5x Legionaries")
       const match = line.match(/^(?:(\d+)x\s*)?([^\(]+)(?:\s*\(\d+pts\))?(?::.*)?$/i);
       if (match) {
         const modelCount = parseInt(match[1]) || 1;
-        const unitName = match[2].trim();
-        const baseSize = baseSizes[unitName];
-        if (baseSize) {
-          let unit = {
-            name: unitName,
-            modelCount,
-            color: colors[colorIndex % colors.length],
-            baseSize
-          };
-          colorIndex++;
-          
-          // Parse base size and assign shape and dimensions
+        let unitName = match[2].trim();
+        console.log(`Parsing unit: ${unitName}, modelCount: ${modelCount}`);
+
+        // Try exact match first
+        let baseSize = baseSizesData[unitName];
+
+        // If no exact match, use fuzzy matching
+        if (!baseSize) {
+          const baseSizeKeys = Object.keys(baseSizesData);
+          let bestMatch = null;
+          let bestScore = 0;
+
+          for (const key of baseSizeKeys) {
+            const score = similarityScore(unitName, key);
+            if (score >= 85 && score > bestScore) {
+              bestMatch = key;
+              bestScore = score;
+            }
+          }
+
+          if (bestMatch) {
+            console.log(`Fuzzy matched ${unitName} to ${bestMatch} with score ${bestScore}`);
+            unitName = bestMatch; // Use the matched name
+            baseSize = baseSizesData[bestMatch];
+          } else {
+            console.warn(`No base size found for ${unitName} (no fuzzy match >= 85%)`);
+            return; // Skip unit if no match
+          }
+        } else {
+          console.log(`Found exact base size for ${unitName}: ${baseSize}`);
+        }
+
+        let unit = {
+          name: unitName,
+          modelCount,
+          color: colors[colorIndex % colors.length],
+          baseSize
+        };
+        colorIndex++;
+
+        // Parse base size and assign shape and dimensions
+        if (baseSize === 'Hull') {
+          unit.shape = 'rectangle';
+          unit.width = 150 / 25.4; // 150 mm to inches
+          unit.height = 100 / 25.4; // 100 mm to inches
+          console.log(`Unit ${unitName} assigned rectangle shape (Hull): ${unit.width}x${unit.height} inches`);
+        } else if (baseSize.toLowerCase().includes('flying')) {
+          unit.shape = 'rectangle';
+          unit.width = 130 / 25.4; // 130 mm to inches
+          unit.height = 100 / 25.4; // 100 mm to inches
+          console.log(`Unit ${unitName} assigned rectangle shape (Flying): ${unit.width}x${unit.height} inches`);
+        } else {
           const sizeMatch = baseSize.match(/^(\d+)(?:x(\d+))?\s*mm$/);
           if (sizeMatch) {
             const size1 = parseInt(sizeMatch[1]) / 25.4; // Convert mm to inches
@@ -133,13 +216,12 @@ export function setupUIControls(stage, unitManagement, width, height) {
               unit.shape = 'circle';
               unit.radius = size1 / 2; // Diameter / 2
             }
+            console.log(`Unit ${unitName} processed with shape: ${unit.shape}`);
           } else {
             console.warn(`Invalid base size format for ${unitName}: ${baseSize}`);
           }
-          newUnits.push(unit);
-        } else {
-          console.warn(`No base size found for ${unitName}`);
         }
+        newUnits.push(unit);
       } else {
         console.warn(`Invalid unit format: ${line}`);
       }
