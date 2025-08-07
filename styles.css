@@ -129,24 +129,19 @@ body {
   align-self: stretch;
 }
 
-#stage-container {
-  width: 100%;
-  height: 100vh;
-}
-
-#deployed-units-list li {
+.roster-item div {
   display: flex;
   align-items: center;
   margin-bottom: 5px;
 }
 
-#deployed-units-list li span {
+.roster-item div span {
   flex-grow: 1;
 }
 
 .delete-btn {
-  margin-left: 10px;
-  background-color: red;
+  margin-right: 5px;
+  background-color: rgb(255, 102, 0);
   color: white;
   cursor: pointer;
   padding: 2px 5px;
@@ -154,7 +149,7 @@ body {
 }
 
 .color-btn {
-  margin-left: 10px;
+  margin-right: 5px;
   width: 20px;
   height: 20px;
   border: none;
