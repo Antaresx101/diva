@@ -24,14 +24,14 @@ export function setupUIControls(stage, unitManagement, width, height) {
       const rosterItem = e.target.classList.contains('roster-item') ? e.target : e.target.closest('.roster-item');
       document.querySelectorAll('.roster-item').forEach(item => item.classList.remove('selected'));
       rosterItem.classList.add('selected');
-      unitManagement.setSelectedUnitName(rosterItem.dataset.unitName);
+      unitManagement.setSelectedUnitName(rosterItem.dataset.unitId);
       console.log('Selected roster unit:', unitManagement.getSelectedUnitName());
     }
   });
 
   rosterList.addEventListener('dragstart', e => {
     if (e.target.classList.contains('roster-item')) {
-      draggedUnit = e.target.dataset.unitName;
+      draggedUnit = e.target.dataset.unitId;
       e.target.classList.add('dragging');
       console.log('Dragging roster item:', draggedUnit);
     }
@@ -68,10 +68,10 @@ export function setupUIControls(stage, unitManagement, width, height) {
   });
 
   document.getElementById('spawn-unit').addEventListener('click', () => {
-    const selectedUnitName = unitManagement.getSelectedUnitName();
-    if (selectedUnitName) {
-      console.log('Spawning unit from button:', selectedUnitName);
-      unitManagement.addUnit(selectedUnitName);
+    const selectedUnitId = unitManagement.getSelectedUnitName();
+    if (selectedUnitId) {
+      console.log('Spawning unit from button:', selectedUnitId);
+      unitManagement.addUnit(selectedUnitId);
     } else {
       console.warn('No unit selected for spawning');
     }
@@ -140,6 +140,7 @@ export function setupUIControls(stage, unitManagement, width, height) {
     const newUnits = [];
     const colors = ['purple', 'blue', 'green', 'red', 'yellow', 'orange', 'cyan', 'magenta', 'brown', 'gray'];
     let colorIndex = 0;
+    let unitIdCounter = 0; // Counter for unique unit IDs
 
     // Wait for baseSizes to load
     const baseSizesData = await baseSizes;
@@ -183,6 +184,7 @@ export function setupUIControls(stage, unitManagement, width, height) {
         }
 
         let unit = {
+          id: `unit_${unitIdCounter++}`, // Unique ID
           name: unitName,
           modelCount,
           color: colors[colorIndex % colors.length],

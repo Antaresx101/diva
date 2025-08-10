@@ -32,6 +32,15 @@ export function setupObjectives(objectiveLayer, objectiveLayouts, pxPerInchWidth
     drawObjectiveLayout();
   }
 
-  drawObjectiveLayout();
-  return { cycleObjectiveLayout };
+  function getCurrentObjectiveIndex() {
+      return currentObjectiveIndex;
+    }
+
+    function setCurrentObjectiveIndex(index) {
+      currentObjectiveIndex = index % objectiveLayouts.length;
+      drawObjectiveLayout();
+    }
+
+    drawObjectiveLayout();
+    return { cycleObjectiveLayout, getCurrentObjectiveIndex, setCurrentObjectiveIndex };
 }

@@ -4,21 +4,27 @@ export function setupDeploymentZones(zoneLayer, deploymentZones, width, height, 
   function drawDeploymentZone() {
     zoneLayer.removeChildren();
     const zone = deploymentZones[currentZoneIndex];
+
     zone.lines.forEach(line => {
       const points = line.points(width, height, pxPerInchWidth, pxPerInchHeight, centerX, centerY);
+
       const konvaLine = new Konva.Line({
         points: points,
         stroke: line.stroke,
         strokeWidth: line.strokeWidth,
         lineCap: 'round',
-        lineJoin: 'round'
+        lineJoin: 'round',
+        closed: !!line.isCircle // closes shape if it's a circle
       });
+
       zoneLayer.add(konvaLine);
     });
+
     zoneLayer.draw();
     document.getElementById('cycle-zones').textContent = `Zone: ${zone.name}`;
     console.log('Drawing deployment zone:', zone.name, 'Lines:', zone.lines);
   }
+
 
   function cycleDeploymentZone() {
     currentZoneIndex = (currentZoneIndex + 1) % deploymentZones.length;
@@ -26,6 +32,15 @@ export function setupDeploymentZones(zoneLayer, deploymentZones, width, height, 
     drawDeploymentZone();
   }
 
-  drawDeploymentZone();
-  return { cycleDeploymentZone };
+  function getCurrentZoneIndex() {
+      return currentZoneIndex;
+    }
+
+    function setCurrentZoneIndex(index) {
+      currentZoneIndex = index % deploymentZones.length;
+      drawDeploymentZone();
+    }
+
+    drawDeploymentZone();
+    return { cycleDeploymentZone, getCurrentZoneIndex, setCurrentZoneIndex };
 }

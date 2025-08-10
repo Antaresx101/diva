@@ -28,18 +28,36 @@ export function setupStage(terrainImage, containerId = 'container') {
   const unitLayer = new Konva.Layer();
   stage.add(terrainLayer, objectiveLayer, zoneLayer, unitLayer);
 
+let terrainKonvaImage = null;
   if (terrainImage) {
-    const terrain = new Konva.Image({
+    terrainKonvaImage = new Konva.Image({
       image: terrainImage,
       x: 0,
       y: 0,
       width: width,
       height: height
     });
-    terrainLayer.add(terrain);
+    terrainLayer.add(terrainKonvaImage);
   } else {
     console.warn('No terrain image provided, skipping terrain layer image');
   }
 
-  return { stage, terrainLayer, objectiveLayer, zoneLayer, unitLayer, width, height, pxPerInchWidth, pxPerInchHeight, centerX, centerY };
+  function setTerrainImage(newImage) {
+    if (terrainKonvaImage) {
+      terrainKonvaImage.remove();
+    }
+    if (newImage) {
+      terrainKonvaImage = new Konva.Image({
+        image: newImage,
+        x: 0,
+        y: 0,
+        width: width,
+        height: height
+      });
+      terrainLayer.add(terrainKonvaImage);
+    }
+    terrainLayer.draw();
+  }
+
+  return { stage, terrainLayer, objectiveLayer, zoneLayer, unitLayer, width, height, pxPerInchWidth, pxPerInchHeight, centerX, centerY, setTerrainImage };
 }

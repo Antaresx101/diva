@@ -2,12 +2,12 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
   let groupDragMode = true;
   let hoveredGroup = null;
   let hoveredShape = null;
-  let selectedUnitName = units[0]?.name || null;
+  let selectedUnitId = units[0]?.id || null;
   let lastSelectedGroup = null;
   let lastSelectedShape = null;
   let unitIdCounter = 0;
-  const colors = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'cyan', 'magenta', 'brown', 'gray'];
-  const unitInstances = new Map();
+  const colors = ['gray', 'yellow', 'orange', 'red', 'brown', 'green', 'cyan', 'blue', 'magenta', 'purple'];
+  const unitInstances = new Map(); // Key by unit ID
 
   function populateRoster() {
     const rosterList = document.getElementById('roster-list');
@@ -16,26 +16,26 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
       const li = document.createElement('li');
       const mc = unit.modelCount > 1 ? `${unit.modelCount}x ` : ``;
       li.className = 'roster-item';
-      li.dataset.unitName = unit.name;
+      li.dataset.unitId = unit.id; // Use unit ID
       li.style.whiteSpace = 'pre-wrap';
       const nameSpan = document.createElement('span');
       nameSpan.textContent = `${mc}${unit.name}\n(${unit.baseSize})`;
       li.appendChild(nameSpan);
-      if (unit.name === selectedUnitName) {
+      if (unit.id === selectedUnitId) {
         li.classList.add('selected');
       }
 
       // Create instanceDiv with buttons
       const instanceDiv = document.createElement('div');
-      instanceDiv.dataset.unitId = '';
+      instanceDiv.dataset.unitId = ''; // Refers to Konva group ID, not unit.id
       instanceDiv.dataset.deleted = 'true'; // Initially no unit deployed
 
       const colorBtn = document.createElement('button');
       colorBtn.className = 'color-btn';
       colorBtn.style.backgroundColor = unit.color || colors[0]; // Default to unit color or first color
       colorBtn.addEventListener('click', () => {
-        const unitId = instanceDiv.dataset.unitId;
-        const groupToColor = unitLayer.findOne('#' + unitId);
+        const groupId = instanceDiv.dataset.unitId;
+        const groupToColor = unitLayer.findOne('#' + groupId);
         const currentColorIndex = colors.indexOf(colorBtn.style.backgroundColor) !== -1 ? colors.indexOf(colorBtn.style.backgroundColor) : 0;
         const newColorIndex = (currentColorIndex + 1) % colors.length;
         const newColor = colors[newColorIndex];
@@ -44,7 +44,7 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
           groupToColor.colorIndex = newColorIndex;
           groupToColor.getChildren().forEach(shape => shape.fill(newColor));
           unitLayer.draw();
-          console.log(`Changed color for unit ${unitId} to: ${newColor}`);
+          console.log(`Changed color for unit ${groupId} to: ${newColor}`);
         } else {
           console.log(`Color changed to ${newColor} for unit ${unit.name} (not deployed)`);
         }
@@ -61,7 +61,7 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
       li.appendChild(instanceDiv);
 
       // Check if unit is deployed
-      const isDeployed = unitInstances.has(unit.name) && unitInstances.get(unit.name).some(instance => !instance.deleted);
+      const isDeployed = unitInstances.has(unit.id) && unitInstances.get(unit.id).some(instance => !instance.deleted);
       if (isDeployed) {
         li.classList.add('deployed');
         li.draggable = false;
@@ -71,7 +71,7 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
         li.style.cursor = 'pointer';
       }
 
-      unitInstances.set(unit.name, []);
+      unitInstances.set(unit.id, []); // Initialize empty array for this unit ID
       rosterList.appendChild(li);
     });
   }
@@ -116,17 +116,10 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
     console.log('Snapped shape to:', bestPos);
   }
 
-  function addUnit(unitName, x = width / 2, y = height / 2) {
-    const unitData = units.find(u => u.name.trim() === unitName.trim());
+  function addUnit(unitId, x = width / 2, y = height / 2) {
+    const unitData = units.find(u => u.id === unitId); // Find by ID
     if (!unitData) {
-      console.warn(`Unit not found: ${unitName}`);
-      return;
-    }
-
-    // Prevent deploying if unit is already deployed
-    const instances = unitInstances.get(unitName);
-    if (instances.some(instance => !instance.deleted)) {
-      console.warn(`Unit already deployed: ${unitName}`);
+      console.warn(`Unit not found: ${unitId}`);
       return;
     }
 
@@ -145,9 +138,9 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
     unitIdCounter++;
 
     // Get the selected color from the roster's color button
-    const rosterItem = Array.from(document.getElementById('roster-list').children).find(li => li.dataset.unitName === unitName);
+    const rosterItem = Array.from(document.getElementById('roster-list').children).find(li => li.dataset.unitId === unitId);
     const colorBtn = rosterItem?.querySelector('.color-btn');
-    const selectedColor = colorBtn?.style.backgroundColor || colors[0]; // Fallback to first color if not found
+    const selectedColor = colorBtn?.style.backgroundColor || colors[0];
     group.colorIndex = colors.indexOf(selectedColor) !== -1 ? colors.indexOf(selectedColor) : colors.indexOf(unitData.color || colors[0]);
 
     const modelCount = unitData.modelCount;
@@ -172,7 +165,7 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
             x: offsetX,
             y: offsetY,
             radius: unitData.radius * pxPerInchWidth,
-            fill: colors[group.colorIndex], // Use the selected color
+            fill: colors[group.colorIndex],
             fillEnabled: true,
             stroke: 'black',
             strokeWidth: 2,
@@ -186,7 +179,7 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
             y: offsetY,
             radiusX: unitData.radiusX * pxPerInchWidth,
             radiusY: unitData.radiusY * pxPerInchHeight,
-            fill: colors[group.colorIndex], // Use the selected color
+            fill: colors[group.colorIndex],
             fillEnabled: true,
             stroke: 'black',
             strokeWidth: 2,
@@ -203,7 +196,7 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
             height: unitData.height * pxPerInchHeight,
             offsetX: (unitData.width * pxPerInchWidth) / 2,
             offsetY: (unitData.height * pxPerInchHeight) / 2,
-            fill: colors[group.colorIndex], // Use the selected color
+            fill: colors[group.colorIndex],
             fillEnabled: true,
             stroke: 'black',
             strokeWidth: 2,
@@ -217,7 +210,7 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
       if (shape) {
         const absPos = {
           x: offsetX - (shape.offsetX() || 0),
-          y: offsetY - (shape.offsetX() || 0)
+          y: offsetY - (shape.offsetY() || 0)
         };
         shapePositions.push(absPos);
 
@@ -357,17 +350,17 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
 
     unitLayer.add(group);
     unitLayer.draw();
-    addUnitInstanceToRoster(group, unitName);
+    addUnitInstanceToRoster(group, unitId);
     if (groupDragMode) {
       lastSelectedGroup = group;
       console.log('New unit added, selected group for rotation:', lastSelectedGroup);
     }
   }
 
-  function addUnitInstanceToRoster(group, unitName) {
-    const rosterItem = Array.from(document.getElementById('roster-list').children).find(li => li.dataset.unitName === unitName);
+  function addUnitInstanceToRoster(group, unitId) {
+    const rosterItem = Array.from(document.getElementById('roster-list').children).find(li => li.dataset.unitId === unitId);
     if (!rosterItem) {
-      console.warn(`Roster item not found for unit: ${unitName}`);
+      console.warn(`Roster item not found for unit ID: ${unitId}`);
       return;
     }
 
@@ -380,8 +373,8 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
     deleteBtn.style.backgroundColor = 'red';
     deleteBtn.style.color = 'white';
     deleteBtn.addEventListener('click', () => {
-      const unitId = instanceDiv.dataset.unitId;
-      const groupToRemove = unitLayer.findOne('#' + unitId);
+      const groupId = instanceDiv.dataset.unitId;
+      const groupToRemove = unitLayer.findOne('#' + groupId);
       if (groupToRemove) {
         groupToRemove.destroy();
         unitLayer.draw();
@@ -389,27 +382,27 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
         deleteBtn.style.backgroundColor = 'transparent';
         deleteBtn.style.color = 'transparent';
         deleteBtn.disabled = true;
-        const instance = unitInstances.get(unitName).find(i => i.id === unitId);
+        const instance = unitInstances.get(unitId).find(i => i.id === groupId);
         if (instance) instance.deleted = true;
         rosterItem.classList.remove('deployed');
         rosterItem.draggable = true;
         rosterItem.style.cursor = 'pointer';
-        console.log(`Deleted unit instance: ${unitId}`);
+        console.log(`Deleted unit instance: ${groupId}`);
       }
     });
 
     const colorBtn = instanceDiv.querySelector('.color-btn');
-    colorBtn.style.backgroundColor = colors[group.colorIndex]; // Reflect unit's initial color
+    colorBtn.style.backgroundColor = colors[group.colorIndex];
 
     rosterItem.classList.add('deployed');
     rosterItem.draggable = false;
     rosterItem.style.cursor = 'default';
-    unitInstances.get(unitName).push({ id: group.id(), group, deleted: false });
+    unitInstances.get(unitId).push({ id: group.id(), group, deleted: false });
   }
 
   function getUnitInstances() {
     const instances = [];
-    unitInstances.forEach((instanceList, unitName) => {
+    unitInstances.forEach((instanceList, unitId) => {
       instanceList.forEach(instance => {
         if (!instance.deleted) {
           const group = instance.group;
@@ -418,12 +411,13 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
             rotation: shape.rotation()
           }));
           instances.push({
-            unitName,
+            unitId, // Save unit ID instead of name
+            unitName: units.find(u => u.id === unitId)?.name || 'Unknown', // Include name for compatibility
             x: group.x(),
             y: group.y(),
             rotation: group.rotation(),
             colorIndex: group.colorIndex,
-            shapes // Include individual shape rotations
+            shapes
           });
         }
       });
@@ -432,31 +426,30 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
   }
 
   function loadUnitInstances(instances) {
-    unitLayer.removeChildren(); // Clear existing units
+    unitLayer.removeChildren();
     unitInstances.clear();
-    populateRoster(); // Rebuild roster to reset instance lists
+    populateRoster();
     instances.forEach(instance => {
-      const unitData = units.find(u => u.name === instance.unitName);
+      const unitData = units.find(u => u.id === instance.unitId);
       if (unitData) {
-        addUnit(instance.unitName, instance.x, instance.y);
+        addUnit(instance.unitId, instance.x, instance.y);
         const group = unitLayer.findOne(`#unit-${unitIdCounter - 1}`);
         if (group) {
           group.rotation(instance.rotation);
           group.colorIndex = instance.colorIndex;
           group.getChildren().forEach(shape => shape.fill(colors[instance.colorIndex]));
-          // Restore individual shape rotations
           if (instance.shapes) {
             group.getChildren(node => node instanceof Konva.Circle || node instanceof Konva.Ellipse || node instanceof Konva.Rect).forEach((shape, index) => {
               const savedShape = instance.shapes.find(s => s.index === index);
               if (savedShape) {
                 shape.rotation(savedShape.rotation);
-                console.log(`Restored rotation ${savedShape.rotation} for shape ${index} in unit ${instance.unitName}`);
+                console.log(`Restored rotation ${savedShape.rotation} for shape ${index} in unit ${instance.unitId}`);
               }
             });
           }
         }
       } else {
-        console.warn(`Unit not found for saved instance: ${instance.unitName}`);
+        console.warn(`Unit not found for saved instance: ${instance.unitId}`);
       }
     });
     unitLayer.draw();
@@ -465,7 +458,7 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
   function refreshRoster(newUnits) {
     units.length = 0;
     newUnits.forEach(unit => units.push(unit));
-    selectedUnitName = units[0]?.name || null;
+    selectedUnitId = units[0]?.id || null;
     unitInstances.clear();
     populateRoster();
     console.log('Roster refreshed with units:', units);
@@ -494,7 +487,7 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
           snapToEdge(shape, hoveredGroup);
         });
         unitLayer.draw();
-      } else if (!groupDragMode && hoveredShape && (hoveredShape instanceof Konva.Ellipse || hoveredShape instanceof Konva.Rect)) {
+      } else if (!groupDragMode && hoveredShape && (hoveredShape instanceof Konva.Ellipse || shape instanceof Konva.Rect)) {
         hoveredShape.rotation(hoveredShape.rotation() - 7.5);
         console.log('Key 2: Rotated shape by -7.5 degrees, new angle:', hoveredShape.rotation());
         snapToEdge(hoveredShape, hoveredShape.getParent());
@@ -543,13 +536,13 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
     refreshRoster,
     getUnitInstances,
     loadUnitInstances,
-    getSelectedUnitName: () => selectedUnitName, 
-    setSelectedUnitName: (name) => { 
-      selectedUnitName = name;
+    getSelectedUnitName: () => selectedUnitId, // Return unit ID
+    setSelectedUnitName: (id) => { 
+      selectedUnitId = id;
       document.querySelectorAll('.roster-item').forEach(item => {
-        item.classList.toggle('selected', item.dataset.unitName === name);
+        item.classList.toggle('selected', item.dataset.unitId === id);
       });
-      console.log('Selected unit:', selectedUnitName);
+      console.log('Selected unit ID:', selectedUnitId);
     } 
   };
 }
