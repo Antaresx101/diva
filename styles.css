@@ -39,7 +39,6 @@ body {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  justify-content: center;
   align-items: center;
   gap: 10px;
   padding: 10px;
@@ -217,24 +216,41 @@ body {
 @media (max-width: 600px) {
   #container {
     width: 95vw;
-    max-height: calc(100vh - 80px);
+    max-height: calc(100vh - 140px);
   }
   #controls {
     width: 95vw;
     margin-top: 5px;
+    flex-wrap: wrap;
+    justify-content: center;
+    height: auto;
+  }
+  #toggle-sidebar, #toggle-drag-mode {
+    flex: 0 0 calc(50% - 5px);
+  }
+  #cycle-zones, #cycle-objectives {
+    flex: 0 0 calc(50% - 5px);
+  }
+  #category-select, #terrain-select {
+    flex: 0 0 calc(50% - 5px);
+  }
+  #import-list, #save-state, #clear-roster {
+    flex: 0 0 calc(50% - 5px);
+  }
+  #install-app {
+    flex: 0 0 100%;
   }
   #install-app, #cycle-zones, #cycle-objectives, #toggle-drag-mode, #toggle-sidebar, #spawn-unit, #import-list, #save-state, #clear-roster {
+    padding: 6px 12px;
+    font-size: 12px;
+    height: 30px;
+  }
+  #category-select, #terrain-select {
     padding: 6px 12px;
     font-size: 12px;
     height: 32px;
   }
   #sidebar {
     width: 200px;
-  }
-
-  #terrain-select {
-    padding: 6px 12px;
-    font-size: 12px;
-    height: 32px;
   }
 }
