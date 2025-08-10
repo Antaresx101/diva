@@ -7,15 +7,15 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>DIVA - Deployment Interface & Visualization App</title>
-  <link rel="stylesheet" href="/styles.css">
-  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/diva/styles.css">
+  <link rel="manifest" href="/diva/manifest.json">
   <link rel="icon" href="/icons/icon-192x192.png">
   <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
   <script src="https://unpkg.com/konva@8.3.2/konva.min.js"></script>
-  <script type="module" src="/main.js"></script>
+  <script type="module" src="/diva/main.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js', { scope: '/' })
+      navigator.serviceWorker.register('/diva/sw.js', { scope: '/diva/' })
         .then(reg => console.log('Service Worker registered:', reg))
         .catch(err => console.error('Service Worker registration failed:', err));
     }
@@ -55,3 +55,4 @@
   </div>
 </body>
 </html>
+
