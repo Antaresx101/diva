@@ -116,6 +116,39 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
     console.log('Snapped shape to:', bestPos);
   }
 
+  function recalculateGroupCentroid(group) {
+    const shapePositions = [];
+    group.getChildren(node => node instanceof Konva.Circle || node instanceof Konva.Ellipse || node instanceof Konva.Rect).forEach(shape => {
+      const absPos = {
+        x: shape.x() - (shape.offsetX() || 0),
+        y: shape.y() - (shape.offsetY() || 0)
+      };
+      shapePositions.push(absPos);
+    });
+
+    if (shapePositions.length > 1) {
+      const centroid = shapePositions.reduce(
+        (acc, pos) => ({
+          x: acc.x + pos.x / shapePositions.length,
+          y: acc.y + pos.y / shapePositions.length
+        }),
+        { x: 0, y: 0 }
+      );
+
+      group.getChildren().forEach(shape => {
+        shape.x(shape.x() - centroid.x);
+        shape.y(shape.y() - centroid.y);
+      });
+
+      group.offsetX(centroid.x);
+      group.offsetY(centroid.y);
+      console.log('Recalculated group centroid:', { offsetX: centroid.x, offsetY: centroid.y });
+    } else {
+      group.offsetX(0);
+      group.offsetY(0);
+    }
+  }
+
   function addUnit(unitId, x = width / 2, y = height / 2) {
     const unitData = units.find(u => u.id === unitId); // Find by ID
     if (!unitData) {
@@ -248,24 +281,43 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
         shape.on('mousedown', e => {
           if (groupDragMode && e.evt.button === 0) {
             console.log('Left-click on shape in Group Drag Mode, dragging group:', group);
+            lastSelectedGroup = group;
+            console.log('Selected group for rotation:', lastSelectedGroup);
             group.startDrag();
+          } else if (!groupDragMode && (shape instanceof Konva.Ellipse || shape instanceof Konva.Rect)) {
+            lastSelectedShape = shape;
+            console.log('Mousedown on shape, selected for rotation:', lastSelectedShape);
           }
         });
 
         shape.on('tap', () => {
           if (!groupDragMode && (shape instanceof Konva.Ellipse || shape instanceof Konva.Rect)) {
-            lastSelectedShape = shape;
-            console.log('Tapped shape, selected for rotation:', lastSelectedShape);
+            if (lastSelectedGroup === group) {
+              lastSelectedGroup = null;
+              lastSelectedShape = null;
+              console.log('Tapped same group, cleared last selected group and shape');
+            } else {
+              lastSelectedShape = shape;
+              console.log('Tapped shape, selected for rotation:', lastSelectedShape);
+            }
           }
         });
 
         shape.on('touchstart', e => {
           if (groupDragMode && e.evt.touches.length === 1) {
             console.log('Single touch on shape in Group Drag Mode, dragging group:', group);
+            lastSelectedGroup = group;
+            console.log('Touchstart on shape, selected group for rotation:', lastSelectedGroup);
             group.startDrag();
           } else if (!groupDragMode && (shape instanceof Konva.Ellipse || shape instanceof Konva.Rect)) {
-            lastSelectedShape = shape;
-            console.log('Touchstart on shape, selected for rotation:', lastSelectedShape);
+            if (lastSelectedGroup === group) {
+              lastSelectedGroup = null;
+              lastSelectedShape = null;
+              console.log('Touchstart on same group, cleared last selected group and shape');
+            } else {
+              lastSelectedShape = shape;
+              console.log('Touchstart on shape, selected for rotation:', lastSelectedShape);
+            }
           }
         });
 
@@ -310,6 +362,8 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
     group.on('mousedown', e => {
       if (groupDragMode && e.evt.button === 0) {
         console.log('Left-click on group, starting drag:', group);
+        lastSelectedGroup = group;
+        console.log('Selected group for rotation:', lastSelectedGroup);
         group.startDrag();
       }
     });
@@ -317,17 +371,28 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
     group.on('touchstart', e => {
       if (groupDragMode && e.evt.touches.length === 1) {
         console.log('Single touch on group, starting drag:', group);
-        group.draggable(true);
-        lastSelectedGroup = group;
-        console.log('Touchstart on group, selected for rotation:', lastSelectedGroup);
-        group.startDrag();
+        if (lastSelectedGroup === group) {
+          lastSelectedGroup = null;
+          lastSelectedShape = null;
+          console.log('Touchstart on same group, cleared last selected group and shape');
+        } else {
+          lastSelectedGroup = group;
+          console.log('Touchstart on group, selected for rotation:', lastSelectedGroup);
+          group.startDrag();
+        }
       }
     });
 
     group.on('tap', () => {
       if (groupDragMode) {
-        lastSelectedGroup = group;
-        console.log('Tapped group, selected for rotation:', lastSelectedGroup);
+        if (lastSelectedGroup === group) {
+          lastSelectedGroup = null;
+          lastSelectedShape = null;
+          console.log('Tapped same group, cleared last selected group and shape');
+        } else {
+          lastSelectedGroup = group;
+          console.log('Tapped group, selected for rotation:', lastSelectedGroup);
+        }
       }
     });
 
@@ -387,6 +452,11 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
         rosterItem.classList.remove('deployed');
         rosterItem.draggable = true;
         rosterItem.style.cursor = 'pointer';
+        if (lastSelectedGroup === groupToRemove) {
+          lastSelectedGroup = null;
+          lastSelectedShape = null;
+          console.log('Deleted group was last selected, cleared selection');
+        }
         console.log(`Deleted unit instance: ${groupId}`);
       }
     });
@@ -411,8 +481,8 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
             rotation: shape.rotation()
           }));
           instances.push({
-            unitId, // Save unit ID instead of name
-            unitName: units.find(u => u.id === unitId)?.name || 'Unknown', // Include name for compatibility
+            unitId,
+            unitName: units.find(u => u.id === unitId)?.name || 'Unknown',
             x: group.x(),
             y: group.y(),
             rotation: group.rotation(),
@@ -487,7 +557,7 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
           snapToEdge(shape, hoveredGroup);
         });
         unitLayer.draw();
-      } else if (!groupDragMode && hoveredShape && (hoveredShape instanceof Konva.Ellipse || shape instanceof Konva.Rect)) {
+      } else if (!groupDragMode && hoveredShape && (hoveredShape instanceof Konva.Ellipse || hoveredShape instanceof Konva.Rect)) {
         hoveredShape.rotation(hoveredShape.rotation() - 7.5);
         console.log('Key 2: Rotated shape by -7.5 degrees, new angle:', hoveredShape.rotation());
         snapToEdge(hoveredShape, hoveredShape.getParent());
@@ -496,22 +566,27 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
     }
   });
 
-  stage.on('tap', () => {
-    console.log('Stage tap detected, groupDragMode:', groupDragMode);
-    if (groupDragMode && lastSelectedGroup) {
-      lastSelectedGroup.rotation(lastSelectedGroup.rotation() + 7.5);
-      console.log('Mobile tap: Rotated last selected group by +7.5 degrees, new angle:', lastSelectedGroup.rotation());
-      lastSelectedGroup.getChildren(node => node instanceof Konva.Circle || node instanceof Konva.Ellipse || node instanceof Konva.Rect).forEach(shape => {
-        snapToEdge(shape, lastSelectedGroup);
-      });
-      unitLayer.draw();
-    } else if (!groupDragMode && lastSelectedShape && (lastSelectedShape instanceof Konva.Ellipse || lastSelectedShape instanceof Konva.Rect)) {
-      lastSelectedShape.rotation(lastSelectedShape.rotation() + 7.5);
-      console.log('Mobile tap: Rotated last selected shape by +7.5 degrees, new angle:', lastSelectedShape.rotation());
-      snapToEdge(lastSelectedShape, lastSelectedShape.getParent());
-      unitLayer.draw();
-    } else {
-      console.log('Mobile tap: No valid group or shape selected for rotation');
+  stage.on('tap', e => {
+    const target = e.target;
+    const isTerrainTap = target === stage || target.getParent() === unitLayer || target instanceof Konva.Image;
+    console.log('Stage tap detected, groupDragMode:', groupDragMode, 'target:', target, 'isTerrainTap:', isTerrainTap);
+
+    if (isTerrainTap) {
+      if (groupDragMode && lastSelectedGroup) {
+        lastSelectedGroup.rotation(lastSelectedGroup.rotation() + 7.5);
+        console.log('Mobile terrain tap: Rotated last selected group by +7.5 degrees, new angle:', lastSelectedGroup.rotation());
+        lastSelectedGroup.getChildren(node => node instanceof Konva.Circle || node instanceof Konva.Ellipse || node instanceof Konva.Rect).forEach(shape => {
+          snapToEdge(shape, lastSelectedGroup);
+        });
+        unitLayer.draw();
+      } else if (!groupDragMode && lastSelectedShape && (lastSelectedShape instanceof Konva.Ellipse || lastSelectedShape instanceof Konva.Rect)) {
+        lastSelectedShape.rotation(lastSelectedShape.rotation() + 7.5);
+        console.log('Mobile terrain tap: Rotated last selected shape by +7.5 degrees, new angle:', lastSelectedShape.rotation());
+        snapToEdge(lastSelectedShape, lastSelectedShape.getParent());
+        unitLayer.draw();
+      } else {
+        console.log('Mobile terrain tap: No valid group or shape selected for rotation');
+      }
     }
   });
 
@@ -520,8 +595,13 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
     groupDragMode = isGroupMode;
     hoveredGroup = null;
     hoveredShape = null;
+    lastSelectedGroup = null;
+    lastSelectedShape = null;
     unitLayer.getChildren(group => group instanceof Konva.Group).forEach(group => {
       group.draggable(isGroupMode);
+      if (isGroupMode) {
+        recalculateGroupCentroid(group);
+      }
       group.getChildren(node => node instanceof Konva.Circle || node instanceof Konva.Ellipse || node instanceof Konva.Rect).forEach(shape => {
         shape.draggable(!isGroupMode);
       });
@@ -536,7 +616,7 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
     refreshRoster,
     getUnitInstances,
     loadUnitInstances,
-    getSelectedUnitName: () => selectedUnitId, // Return unit ID
+    getSelectedUnitName: () => selectedUnitId,
     setSelectedUnitName: (id) => { 
       selectedUnitId = id;
       document.querySelectorAll('.roster-item').forEach(item => {
