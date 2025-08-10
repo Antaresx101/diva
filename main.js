@@ -16,7 +16,7 @@ terrainImage.onerror = function() {
   console.error('Failed to load terrain image at /assets/' + currentTerrain);
   initApp(null);
 };
-terrainImage.src = '/diva/assets/' + currentTerrain;
+terrainImage.src = '/assets/' + currentTerrain;
 
 function initApp(terrainImage) {
   const { stage, terrainLayer, objectiveLayer, zoneLayer, unitLayer, width, height, pxPerInchWidth, pxPerInchHeight, centerX, centerY, setTerrainImage } = setupStage(terrainImage);
@@ -70,7 +70,7 @@ function initApp(terrainImage) {
       console.error('Failed to load new terrain:', currentTerrain);
       setTerrainImage(null);
     };
-    newTerrainImage.src = '/diva/assets/' + currentTerrain;
+    newTerrainImage.src = '/assets/' + currentTerrain;
   });
 
   // Handle terrain change
@@ -85,8 +85,66 @@ function initApp(terrainImage) {
       console.error('Failed to load new terrain:', currentTerrain);
       setTerrainImage(null);
     };
-    newTerrainImage.src = '/diva/assets/' + currentTerrain;
+    newTerrainImage.src = '/assets/' + currentTerrain;
   });
+
+
+  // PWA install prompt logic
+  let deferredPrompt = null;
+  const installButton = document.getElementById('install-app');
+
+  // Check if the app is already installed
+  function checkIfInstalled() {
+    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+      console.log('App is running in standalone mode');
+      installButton.style.display = 'none';
+      return true;
+    }
+    if ('getInstalledRelatedApps' in navigator) {
+      navigator.getInstalledRelatedApps().then(apps => {
+        if (apps.length > 0) {
+          console.log('App is already installed');
+          installButton.style.display = 'none';
+        }
+      });
+    }
+    return false;
+  }
+
+  // Listen for beforeinstallprompt event
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault(); // Prevent default browser prompt
+    deferredPrompt = e; // Store prompt
+    if (!checkIfInstalled()) {
+      installButton.style.display = 'inline-block'; // Show button
+      console.log('Install prompt available');
+    }
+  });
+
+  // Handle install button click
+  installButton.addEventListener('click', async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt(); // Show install prompt
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log('Install prompt outcome:', outcome);
+      if (outcome === 'accepted') {
+        installButton.style.display = 'none'; // Hide button after install
+        console.log('User accepted the install prompt');
+      }
+      deferredPrompt = null; // Clear prompt
+    }
+  });
+
+  // Hide button if app is already installed
+  window.addEventListener('appinstalled', () => {
+    installButton.style.display = 'none';
+    console.log('App was installed, hiding install button');
+    deferredPrompt = null;
+  });
+
+  // Initial check for installed state
+  checkIfInstalled();
+
 
   // Save state to localStorage
   function saveState() {
@@ -125,7 +183,7 @@ function initApp(terrainImage) {
             restoredTerrainImage.onload = () => {
               setTerrainImage(restoredTerrainImage);
             };
-            restoredTerrainImage.src = '/diva/assets/' + currentTerrain;
+            restoredTerrainImage.src = '/assets/' + currentTerrain;
           } else {
             currentTerrain = terrainCategories[currentCategory][0];
             terrainSelect.value = currentTerrain;
@@ -133,7 +191,7 @@ function initApp(terrainImage) {
             restoredTerrainImage.onload = () => {
               setTerrainImage(restoredTerrainImage);
             };
-            restoredTerrainImage.src = '/diva/assets/' + currentTerrain;
+            restoredTerrainImage.src = '/assets/' + currentTerrain;
           }
         }
 
@@ -171,7 +229,7 @@ function initApp(terrainImage) {
     defaultTerrainImage.onload = () => {
       setTerrainImage(defaultTerrainImage);
     };
-    defaultTerrainImage.src = '/diva/assets/' + currentTerrain;
+    defaultTerrainImage.src = '/assets/' + currentTerrain;
     localStorage.setItem('diva_state', JSON.stringify({ 
       units: [], 
       unitInstances: [], 
@@ -201,5 +259,4 @@ function initApp(terrainImage) {
   console.log('Drawing layers:', { width, height, centerX, centerY });
   terrainLayer.draw();
   unitLayer.draw();
-
 }
