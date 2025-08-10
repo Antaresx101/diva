@@ -16,7 +16,7 @@ terrainImage.onerror = function() {
   console.error('Failed to load terrain image at /assets/' + currentTerrain);
   initApp(null);
 };
-terrainImage.src = '/assets/' + currentTerrain;
+terrainImage.src = '/diva/assets/' + currentTerrain;
 
 function initApp(terrainImage) {
   const { stage, terrainLayer, objectiveLayer, zoneLayer, unitLayer, width, height, pxPerInchWidth, pxPerInchHeight, centerX, centerY, setTerrainImage } = setupStage(terrainImage);
@@ -70,7 +70,7 @@ function initApp(terrainImage) {
       console.error('Failed to load new terrain:', currentTerrain);
       setTerrainImage(null);
     };
-    newTerrainImage.src = '/assets/' + currentTerrain;
+    newTerrainImage.src = '/diva/assets/' + currentTerrain;
   });
 
   // Handle terrain change
@@ -125,7 +125,7 @@ function initApp(terrainImage) {
             restoredTerrainImage.onload = () => {
               setTerrainImage(restoredTerrainImage);
             };
-            restoredTerrainImage.src = '/assets/' + currentTerrain;
+            restoredTerrainImage.src = '/diva/assets/' + currentTerrain;
           } else {
             currentTerrain = terrainCategories[currentCategory][0];
             terrainSelect.value = currentTerrain;
@@ -133,7 +133,7 @@ function initApp(terrainImage) {
             restoredTerrainImage.onload = () => {
               setTerrainImage(restoredTerrainImage);
             };
-            restoredTerrainImage.src = '/assets/' + currentTerrain;
+            restoredTerrainImage.src = '/diva/assets/' + currentTerrain;
           }
         }
 
@@ -171,7 +171,7 @@ function initApp(terrainImage) {
     defaultTerrainImage.onload = () => {
       setTerrainImage(defaultTerrainImage);
     };
-    defaultTerrainImage.src = '/assets/' + currentTerrain;
+    defaultTerrainImage.src = '/diva/assets/' + currentTerrain;
     localStorage.setItem('diva_state', JSON.stringify({ 
       units: [], 
       unitInstances: [], 
@@ -201,4 +201,5 @@ function initApp(terrainImage) {
   console.log('Drawing layers:', { width, height, centerX, centerY });
   terrainLayer.draw();
   unitLayer.draw();
+
 }
