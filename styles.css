@@ -25,7 +25,7 @@ body {
 
 #container {
   width: 90vw;
-  max-height: calc(100vh - 80px); /* Adjusted to account for controls below */
+  max-height: calc(100vh - 80px);
   aspect-ratio: 44 / 60;
   flex: 1 0 auto;
   overflow: hidden;
@@ -38,11 +38,13 @@ body {
 #controls {
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
   align-items: center;
   gap: 10px;
   padding: 10px;
-  margin-top: 10px; /* Added spacing between container and controls */
-  height: 60px;
+  margin-top: 10px;
+  height: auto;
   overflow-x: auto;
   white-space: nowrap;
   width: 90vw;
