@@ -38,12 +38,12 @@ body {
 #controls {
   display: flex;
   flex-direction: row;
-  flex-wrap: wrap;
+  flex-wrap: wrap; /* Allow wrapping for multiple rows */
   align-items: center;
   gap: 10px;
   padding: 10px;
   margin-top: 10px;
-  height: auto;
+  height: auto; /* Allow height to adjust for multiple rows */
   overflow-x: auto;
   white-space: nowrap;
   width: 90vw;
@@ -58,6 +58,9 @@ body {
   color: white;
   border: none;
   border-radius: 5px;
+  text-overflow: ellipsis; /* Truncate long text with ellipsis */
+  overflow: hidden; /* Hide overflow text */
+  white-space: nowrap; /* Prevent text wrapping within buttons */
 }
 
 #cycle-zones:hover, #cycle-objectives:hover, #toggle-drag-mode:hover, #toggle-sidebar:hover, #spawn-unit:hover {
@@ -78,6 +81,9 @@ body {
   background-repeat: no-repeat;
   background-position: right 10px top 50%;
   background-size: 12px auto;
+  text-overflow: ellipsis; /* Truncate long text in select elements */
+  overflow: hidden; /* Hide overflow text */
+  white-space: nowrap; /* Prevent text wrapping */
 }
 
 #category-select:hover, #terrain-select:hover {
@@ -227,28 +233,44 @@ body {
   }
   #toggle-sidebar, #toggle-drag-mode {
     flex: 0 0 calc(50% - 5px);
+    max-width: calc(50% - 5px);
+    min-width: 0;
   }
   #cycle-zones, #cycle-objectives {
     flex: 0 0 calc(50% - 5px);
+    max-width: calc(50% - 5px);
+    min-width: 0;
   }
   #category-select, #terrain-select {
     flex: 0 0 calc(50% - 5px);
+    max-width: calc(50% - 5px);
+    min-width: 0;
   }
   #import-list, #save-state, #clear-roster {
-    flex: 0 0 calc(50% - 5px);
+    flex: 0 0 calc(50% - 7px);
+    max-width: calc(50% - 7px);
+    min-width: 0;
   }
   #install-app {
     flex: 0 0 100%;
+    max-width: 100%;
+    min-width: 0;
   }
   #install-app, #cycle-zones, #cycle-objectives, #toggle-drag-mode, #toggle-sidebar, #spawn-unit, #import-list, #save-state, #clear-roster {
     padding: 6px 12px;
     font-size: 12px;
-    height: 30px;
+    height: 32px;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
   }
   #category-select, #terrain-select {
     padding: 6px 12px;
     font-size: 12px;
     height: 32px;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
   }
   #sidebar {
     width: 200px;
