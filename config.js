@@ -216,34 +216,53 @@ const objectiveLayouts = [
     objectives: []
   },
   {
-    name: 'Obj 1',
+    name: 'Crucible of Battle',
     objectives: [
-      { x: 22, y: 30, radius: 3 },
-      { x: 12, y: 12, radius: 3 },
-      { x: 32, y: 12, radius: 3 },
-      { x: 12, y: 48, radius: 3 },
-      { x: 32, y: 48, radius: 3 }
+      { x: 10, y: 14, radius: 3.75 },
+      { x: 36, y: 20, radius: 3.75 },
+      { x: 22, y: 30, radius: 3.75 },
+      { x: 8, y: 40, radius: 3.75 },
+      { x: 34, y: 46, radius: 3.75 }
     ]
   },
   {
-    name: 'Obj 2',
+    name: 'Dawn of War',
     objectives: [
-      { x: 11, y: 20, radius: 3 },
-      { x: 22, y: 20, radius: 3 },
-      { x: 33, y: 20, radius: 3 },
-      { x: 11, y: 40, radius: 3 },
-      { x: 22, y: 40, radius: 3 },
-      { x: 33, y: 40, radius: 3 }
+      { x: 22, y: 10, radius: 3.75 },
+      { x: 6, y: 30, radius: 3.75 },
+      { x: 22, y: 30, radius: 3.75 },
+      { x: 38, y: 30, radius: 3.75 },
+      { x: 22, y: 50, radius: 3.75 }
     ]
   },
   {
-    name: 'Obj 3',
+    name: 'Search and Destroy',
     objectives: [
-      { x: 22, y: 30, radius: 3 },
-      { x: 14.7, y: 20, radius: 3 },
-      { x: 29.3, y: 20, radius: 3 },
-      { x: 14.7, y: 40, radius: 3 },
-      { x: 29.3, y: 40, radius: 3 }
+      { x: 10, y: 14, radius: 3.75 },
+      { x: 34, y: 14, radius: 3.75 },
+      { x: 22, y: 30, radius: 3.75 },
+      { x: 10, y: 46, radius: 3.75 },
+      { x: 34, y: 46, radius: 3.75 }
+    ]
+  },
+  {
+    name: 'Sweeping Engagement',
+    objectives: [
+      { x: 6, y: 18, radius: 3.75 },
+      { x: 26, y: 10, radius: 3.75 },
+      { x: 22, y: 30, radius: 3.75 },
+      { x: 18, y: 50, radius: 3.75 },
+      { x: 38, y: 42, radius: 3.75 }
+    ]
+  },
+  {
+    name: 'Tipping Point',
+    objectives: [
+      { x: 10, y: 14, radius: 3.75 },
+      { x: 36, y: 22, radius: 3.75 },
+      { x: 22, y: 30, radius: 3.75 },
+      { x: 8, y: 38, radius: 3.75 },
+      { x: 34, y: 46, radius: 3.75 }
     ]
   }
 ];
