@@ -1,5 +1,5 @@
 const APP_PREFIX = 'DIVA_';
-const VERSION = 'version_03';
+const VERSION = 'version_04';
 const CACHE_NAME = APP_PREFIX + VERSION;
 const URLS = [
   '/diva/',
@@ -12,7 +12,47 @@ const URLS = [
   '/diva/deploymentZones.js',
   '/diva/objectives.js',
   '/diva/uiControls.js',
-  '/diva/assets/terrain.png',
+  "/diva/assets/GW_Layout 1.png",
+  "/diva/assets/GW_Layout 2.png",
+  "/diva/assets/GW_Layout 3.png",
+  "/diva/assets/GW_Layout 4.png",
+  "/diva/assets/GW_Layout 5.png",
+  "/diva/assets/GW_Layout 6.png",
+  "/diva/assets/GW_Layout 7.png",
+  "/diva/assets/GW_Layout 8.png",
+  "/diva/assets/WTC_Crucible of Battle 1.png",
+  "/diva/assets/WTC_Crucible of Battle 2.png",
+  "/diva/assets/WTC_Crucible of Battle 3.png",
+  "/diva/assets/WTC_Crucible of Battle 4 - 5.png",
+  "/diva/assets/WTC_Crucible of Battle 6.png",
+  "/diva/assets/WTC_Crucible of Battle 7.png",
+  "/diva/assets/WTC_Crucible of Battle 8.png",
+  "/diva/assets/WTC_Dawn of War 1.png",
+  "/diva/assets/WTC_Dawn of War 2.png",
+  "/diva/assets/WTC_Dawn of War 3.png",
+  "/diva/assets/WTC_Dawn of War 4.png",
+  "/diva/assets/WTC_Dawn of War 5.png",
+  "/diva/assets/WTC_Dawn of War 6.png",
+  "/diva/assets/WTC_Search and Destroy 1.png",
+  "/diva/assets/WTC_Search and Destroy 2.png",
+  "/diva/assets/WTC_Search and Destroy 3.png",
+  "/diva/assets/WTC_Search and Destroy 4 - 5.png",
+  "/diva/assets/WTC_Search and Destroy 6.png",
+  "/diva/assets/WTC_Search and Destroy 7.png",
+  "/diva/assets/WTC_Search and Destroy 8.png",
+  "/diva/assets/WTC_Sweeping Engagement 1.png",
+  "/diva/assets/WTC_Sweeping Engagement 2.png",
+  "/diva/assets/WTC_Sweeping Engagement 3.png",
+  "/diva/assets/WTC_Sweeping Engagement 4.png",
+  "/diva/assets/WTC_Sweeping Engagement 5.png",
+  "/diva/assets/WTC_Sweeping Engagement 6.png",
+  "/diva/assets/WTC_Tipping Point 1.png",
+  "/diva/assets/WTC_Tipping Point 2.png",
+  "/diva/assets/WTC_Tipping Point 3.png",
+  "/diva/assets/WTC_Tipping Point 4 - 5.png",
+  "/diva/assets/WTC_Tipping Point 6.png",
+  "/diva/assets/WTC_Tipping Point 7.png",
+  "/diva/assets/WTC_Tipping Point 8.png",
   '/diva/icons/icon-192x192.png',
   '/diva/icons/icon-512x512.png',
   '/diva/manifest.json'
@@ -74,10 +114,6 @@ self.addEventListener('fetch', event => {
         if (event.request.mode === 'navigate') {
           console.log('Falling back to /diva/index.html for navigation');
           return caches.match('/diva/index.html');
-        }
-        if (event.request.url.includes('/diva/assets/terrain.png')) {
-          console.log('Terrain image not found, serving fallback response');
-          return new Response('Terrain image unavailable', { status: 404 });
         }
         console.log('No cache found for:', event.request.url);
         return new Response('Offline and no cached resource available', { status: 404 });
