@@ -10,13 +10,13 @@ export function setupObjectives(objectiveLayer, objectiveLayouts, pxPerInchWidth
         y: obj.y * pxPerInchHeight,
         radius: obj.radius * pxPerInchWidth,
         stroke: 'orange',
-        strokeWidth: 2,
+        strokeWidth: 1.5,
         fill: 'rgba(255, 165, 0, 0.2)'
       });
       const markerCircle = new Konva.Circle({
         x: obj.x * pxPerInchWidth,
         y: obj.y * pxPerInchHeight,
-        radius: 0.5 * pxPerInchWidth,
+        radius: 0.75 * pxPerInchWidth,
         fill: 'orange'
       });
       objectiveLayer.add(radiusCircle, markerCircle);
