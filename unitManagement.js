@@ -71,6 +71,20 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
         li.style.cursor = 'pointer';
       }
 
+      // Add double-tap event listener for mobile spawning
+      let lastTap = 0;
+      li.addEventListener('touchend', (e) => {
+        e.preventDefault(); // Prevent default behaviors like scrolling
+        const currentTime = new Date().getTime();
+        const tapLength = currentTime - lastTap;
+        if (tapLength < 300 && tapLength > 0) {
+          // Double tap detected, spawn unit at map center
+          addUnit(unit.id, width / 2, height / 2);
+          console.log(`Double tap on roster item, spawned unit ${unit.id} at center (${width / 2}, ${height / 2})`);
+        }
+        lastTap = currentTime;
+      });
+
       unitInstances.set(unit.id, []); // Initialize empty array for this unit ID
       rosterList.appendChild(li);
     });
@@ -540,7 +554,7 @@ export function setupUnits(stage, unitLayer, units, pxPerInchWidth, pxPerInchHei
 
   return { 
     addUnit, 
-    updateDragMode, 
+    updateDragMode,   
     refreshRoster,
     getUnitInstances,
     loadUnitInstances,
