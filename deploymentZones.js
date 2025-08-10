@@ -21,7 +21,7 @@ export function setupDeploymentZones(zoneLayer, deploymentZones, width, height, 
     });
 
     zoneLayer.draw();
-    document.getElementById('cycle-zones').textContent = `Zone: ${zone.name}`;
+    document.getElementById('cycle-zones').textContent = `Deployment Zone: ${zone.name}`;
     console.log('Drawing deployment zone:', zone.name, 'Lines:', zone.lines);
   }
 
@@ -43,4 +43,5 @@ export function setupDeploymentZones(zoneLayer, deploymentZones, width, height, 
 
     drawDeploymentZone();
     return { cycleDeploymentZone, getCurrentZoneIndex, setCurrentZoneIndex };
+
 }
