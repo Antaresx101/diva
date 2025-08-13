@@ -256,8 +256,28 @@ function initApp(terrainImage) {
     clearRoster();
   });
 
+  // Show Tutorial
+  document.getElementById('tutorial').addEventListener('click', () => {
+  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+  if (isMobile) {
+    alert(
+        '📱 Mobile Controls:\n' +
+        '• SPAWNING - Double tap a unit in the sidebar\n' +
+        '• ROTATION  - Tap a unit/model, then tap anywhere'
+      );
+    } else {
+      alert(
+        '💻 Desktop Controls:\n' +
+        '• SPAWNING - Drag a unit into the map from the sidebar\n' +
+        '• ROTATION  - Hover over a unit/model, then press 1 or 2'
+      );
+    }
+  });
+  
   console.log('Drawing layers:', { width, height, centerX, centerY });
   terrainLayer.draw();
   unitLayer.draw();
 }
+
 
