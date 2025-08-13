@@ -5,12 +5,6 @@ export function setupUIControls(stage, unitManagement, width, height) {
   const rosterList = document.getElementById('roster-list');
   let draggedUnit = null;
 
-  // Create Clear Roster button
-  const clearRosterButton = document.createElement('button');
-  clearRosterButton.id = 'clear-roster';
-  clearRosterButton.textContent = 'Clear Roster';
-  document.getElementById('controls').appendChild(clearRosterButton);
-
   document.getElementById('toggle-sidebar').addEventListener('click', () => {
     sidebar.classList.toggle('open');
   });
@@ -48,21 +42,13 @@ export function setupUIControls(stage, unitManagement, width, height) {
     e.preventDefault();
   });
 
-  const isDesktop = !('ontouchstart' in window || navigator.maxTouchPoints > 0);
-
   stage.container().addEventListener('drop', e => {
     e.preventDefault();
     if (draggedUnit) {
-      if (isDesktop) {
-        console.log('Desktop drop: Spawning unit at canvas center:', draggedUnit);
-        unitManagement.addUnit(draggedUnit);
-      } else {
-        const rect = stage.container().getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        console.log('Mobile drop: Dropped unit:', draggedUnit, 'at position:', { x, y });
-        unitManagement.addUnit(draggedUnit, x, y);
-      }
+      stage.setPointersPositions(e);
+      const pos = stage.getPointerPosition();
+      console.log('Dropped unit:', draggedUnit, 'at position:', pos);
+      unitManagement.addUnit(draggedUnit, pos.x, pos.y);
       draggedUnit = null;
     }
   });
@@ -147,7 +133,7 @@ export function setupUIControls(stage, unitManagement, width, height) {
     console.log('baseSizes loaded for parsing:', baseSizesData);
 
     lines.forEach(line => {
-      // Match unit name and optional model count (e.g., "5x Legionaries")
+      // Match unit name and model count
       const match = line.match(/^(?:(\d+)x\s*)?([^\(]+)(?:\s*\(\d+pts\))?(?::.*)?$/i);
       if (match) {
         const modelCount = parseInt(match[1]) || 1;
